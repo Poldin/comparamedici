@@ -23,6 +23,8 @@ export default function Onboarding() {
 
     // Stato che contiene le attività random estratte dal DB all'avvio
     const [featured, setFeatured] = useState<Activity[]>([]);
+    // Stato di caricamento per le soluzioni one-click
+    const [loadingFeatured, setLoadingFeatured] = useState(true);
 
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,10 +32,12 @@ export default function Onboarding() {
     // Carica le attività random all'avvio del componente
     useEffect(() => {
         async function loadFeatured() {
+            setLoadingFeatured(true);
             const { data, error } = await getRandomActivities();
             if (!error && data) {
                 setFeatured(data);
             }
+            setLoadingFeatured(false);
         }
         loadFeatured();
     }, []);
@@ -87,7 +91,7 @@ export default function Onboarding() {
             {/* Testata */}
             <div className="space-y-2">
                 <h1 className="text-4xl font-black tracking-tighter uppercase">
-                    Compara attività mediche
+                    Compara medici
                 </h1>
                 <p className="text-sm text-neutral-500 leading-relaxed">
                     Compara le attività mediche sul territorio. Verifica il livello di reputazione di poliambulatori, studi, cliniche e centri medici.
@@ -156,8 +160,23 @@ export default function Onboarding() {
                     )}
                 </div>
 
-                {/* TASTI CLICK VELOCI SOTTO IL CAMPO INPUT */}
-                {featured.length > 0 && (
+                {/* SKELETON O TASTI CLICK VELOCI SOTTO IL CAMPO INPUT */}
+                {loadingFeatured ? (
+                    <div className="space-y-2 pt-1 animate-pulse">
+                        <div className="h-3 w-14 bg-neutral-200 rounded" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[...Array(4)].map((_, index) => (
+                                <div 
+                                    key={`skeleton-${index}`} 
+                                    className="bg-neutral-100 border border-neutral-200 px-4 py-3 rounded-lg h-[68px] flex flex-col justify-center space-y-2"
+                                >
+                                    <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
+                                    <div className="h-2.5 bg-neutral-200 rounded w-1/2"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : featured.length > 0 ? (
                     <div className="space-y-2 pt-1">
                         <span className="text-[10px] font-mono font-bold uppercase text-neutral-400 tracking-wider block">
                             Oppure
@@ -170,12 +189,12 @@ export default function Onboarding() {
                                     onClick={() => handleSelectActivity(activity)}
                                     className="flex flex-col text-left justify-center bg-neutral-100 hover:bg-zinc-200 text-zinc-700 px-4 py-3 rounded-lg transition-colors border border-neutral-200 w-full h-auto shadow-sm group"
                                 >
-                                    {/* Nome principale: rimosso 'truncate' e aggiunto 'whitespace-normal' per forzare l'andata a capo */}
+                                    {/* Nome principale */}
                                     <span className="text-xs font-bold uppercase tracking-tight text-zinc-900 group-hover:text-black whitespace-normal wrap-break-word">
                                         {activity.name}
                                     </span>
 
-                                    {/* Riga con la categoria: rimosso 'truncate' e aggiunto 'whitespace-normal' */}
+                                    {/* Riga con la categoria */}
                                     {activity.google_category ? (
                                         <span className="text-[10px] font-mono font-bold text-neutral-400 uppercase mt-1 whitespace-normal wrap-break-word">
                                             {activity.google_category}
@@ -189,7 +208,7 @@ export default function Onboarding() {
                             ))}
                         </div>
                     </div>
-                )}
+                ) : null}
             </div>
         </div>
     );

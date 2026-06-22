@@ -1,6 +1,7 @@
 import React from "react";
 import Onboarding from "./components/compare/OnboardingScreen";
 import Dashboard from "./components/compare/DashboardScreen";
+import Footer from "./components/Footer";
 
 interface PageProps {
   searchParams: Promise<{
@@ -13,7 +14,7 @@ interface PageProps {
 
 export default async function Page({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
-  
+
   const latStr = resolvedParams.lat;
   const lngStr = resolvedParams.lng;
   const radiusStr = resolvedParams.radius || "15"; // Raggio di default 15km
@@ -24,12 +25,12 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-white text-black flex flex-col items-center px-1 pt-1 md:pt-10 pb-12 selection:bg-black selection:text-white">
-      
+
       {hasCoordinates ? (
         /* STATO ATTIVO: Abbiamo la posizione -> Renderizza la Dashboard Reale */
-        <Dashboard 
-          lat={parseFloat(latStr)} 
-          lng={parseFloat(lngStr)} 
+        <Dashboard
+          lat={parseFloat(latStr)}
+          lng={parseFloat(lngStr)}
           radius={parseFloat(radiusStr)}
           targetName={nameStr}
         />
@@ -37,6 +38,10 @@ export default async function Page({ searchParams }: PageProps) {
         /* STATO INIZIALE: Nessuna coordinata -> Mostra l'Onboarding con Autocomplete */
         <Onboarding />
       )}
+
+      <div className="w-full mt-12">
+        <Footer />
+      </div>
 
     </main>
   );
