@@ -13,6 +13,8 @@ interface Activity {
     total_reviews: number | null;
     lat: number | null;
     lng: number | null;
+    address: string | null;
+    phone: string | null;
 }
 
 export default function Onboarding() {
@@ -80,10 +82,10 @@ export default function Onboarding() {
         }
         setShowDropdown(false);
         setKeyword(activity.name);
-        
+
         // Generiamo uno slug/id pulito partendo dal nome (es: "Studio Marazzato" -> "studio-marazzato")
         const clinicSlug = activity.id || encodeURIComponent(activity.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-    
+
         // Reindirizziamo verso il nuovo path dinamico
         router.push(`/clinic/${clinicSlug}?lat=${activity.lat}&lng=${activity.lng}&radius=15&name=${encodeURIComponent(activity.name)}`);
     };
@@ -126,11 +128,6 @@ export default function Onboarding() {
                     {showDropdown && dropdownItems.length > 0 && (
                         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-neutral-100">
 
-                            {!hasSearchKeyword && (
-                                <div className="p-2 text-[10px] font-mono font-bold text-neutral-400 uppercase bg-neutral-50 tracking-wider">
-                                    💡 Suggeriti a caso dal DB
-                                </div>
-                            )}
 
                             {dropdownItems.map((activity) => (
                                 <button
@@ -144,7 +141,15 @@ export default function Onboarding() {
                                             {activity.name}
                                         </div>
                                         <div className="text-[10px] font-mono text-neutral-400 font-bold uppercase mt-0.5 truncate">
-                                            {activity.google_category || "na"}
+                                            {(() => {
+                                                const metadata = [
+                                                    activity.google_category,
+                                                    activity.address, // Assicurati che le tue Server Actions (searchActivitiesByName) restituiscano address e phone se vuoi vederli qui
+                                                    activity.phone
+                                                ].filter(Boolean);
+
+                                                return metadata.length > 0 ? metadata.join(" · ") : "Generico";
+                                            })()}
                                         </div>
                                     </div>
                                     {activity.total_reviews ? (
@@ -171,8 +176,8 @@ export default function Onboarding() {
                         <div className="h-3 w-14 bg-neutral-200 rounded" />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {[...Array(4)].map((_, index) => (
-                                <div 
-                                    key={`skeleton-${index}`} 
+                                <div
+                                    key={`skeleton-${index}`}
                                     className="bg-neutral-100 border border-neutral-200 px-4 py-3 rounded-lg h-[68px] flex flex-col justify-center space-y-2"
                                 >
                                     <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
@@ -199,16 +204,24 @@ export default function Onboarding() {
                                         {activity.name}
                                     </span>
 
-                                    {/* Riga con la categoria */}
-                                    {activity.google_category ? (
-                                        <span className="text-[10px] font-mono font-bold text-neutral-400 uppercase mt-1 whitespace-normal wrap-break-word">
-                                            {activity.google_category}
-                                        </span>
-                                    ) : (
-                                        <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase mt-1">
-                                            
-                                        </span>
-                                    )}
+                                    {/* metadati */}
+                                    {(() => {
+                                        const metadata = [
+                                            activity.google_category,
+                                            activity.address, // Assicurati che anche getRandomActivities restituisca address e phone nel SELECT
+                                            activity.phone
+                                        ].filter(Boolean);
+
+                                        return metadata.length > 0 ? (
+                                            <span className="text-[10px] font-mono font-bold text-neutral-400 uppercase mt-1 whitespace-normal wrap-break-word">
+                                                {metadata.join(" · ")}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase mt-1">
+                                                Generico
+                                            </span>
+                                        );
+                                    })()}
                                 </button>
                             ))}
                         </div>

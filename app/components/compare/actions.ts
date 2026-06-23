@@ -13,7 +13,7 @@ export async function searchActivitiesByName(keyword: string) {
     try {
         const { data, error } = await supabase
             .from("comparator_out_google")
-            .select("id, name, google_category, avg_review, total_reviews, lat, lng")
+            .select("id, name, google_category, avg_review, total_reviews, lat, lng, address, phone")
             .ilike("name", `%${keyword.trim()}%`)
             .limit(8);
 
@@ -94,7 +94,7 @@ export async function getRandomActivities() {
         // 3. Prendiamo 5 record consecutivi a partire da quell'offset randomico
         const { data, error } = await supabase
             .from("comparator_out_google")
-            .select("id, name, google_category, avg_review, total_reviews, lat, lng")
+            .select("id, name, google_category, avg_review, total_reviews, lat, lng, address, phone")
             .range(randomOffset, randomOffset + 4);
 
         if (error) {
