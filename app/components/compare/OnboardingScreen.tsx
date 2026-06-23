@@ -80,7 +80,12 @@ export default function Onboarding() {
         }
         setShowDropdown(false);
         setKeyword(activity.name);
-        router.push(`?lat=${activity.lat}&lng=${activity.lng}&radius=15&name=${encodeURIComponent(activity.name)}`);
+        
+        // Generiamo uno slug/id pulito partendo dal nome (es: "Studio Marazzato" -> "studio-marazzato")
+        const clinicSlug = activity.id || encodeURIComponent(activity.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+    
+        // Reindirizziamo verso il nuovo path dinamico
+        router.push(`/clinic/${clinicSlug}?lat=${activity.lat}&lng=${activity.lng}&radius=15&name=${encodeURIComponent(activity.name)}`);
     };
 
     const hasSearchKeyword = keyword.trim().length >= 2;
@@ -201,7 +206,7 @@ export default function Onboarding() {
                                         </span>
                                     ) : (
                                         <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase mt-1">
-                                            Generico
+                                            
                                         </span>
                                     )}
                                 </button>

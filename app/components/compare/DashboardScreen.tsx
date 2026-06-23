@@ -99,7 +99,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
   const handleRadiusChange = (newRadius: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("radius", newRadius.toString());
-    router.push(`?${params.toString()}`);
+    router.push(`${window.location.pathname}?${params.toString()}`);
   };
 
   if (loading) {
@@ -166,9 +166,32 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
             💘condividi
           </button>
         </div>
+
         <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 leading-none">
           {targetName ? decodeURIComponent(targetName) : "Mercato Locale"}
         </h1>
+
+        {/* NUOVO SOTTOTITOLO DINAMICO */}
+        {targetRecord && (
+          (() => {
+            // Creiamo un array inserendo solo i campi che esistono e non sono vuoti
+            const metadata = [
+              targetRecord.google_category,
+              targetRecord.address,
+              targetRecord.phone
+            ].filter(Boolean); // Rimuove null, undefined o stringhe vuote
+
+            // Se l'array ha almeno un elemento, lo mostriamo unendo i testi con il pallino " · "
+            if (metadata.length > 0) {
+              return (
+                <p className="text-xs font-mono font-bold uppercase text-zinc-400 mt-1 leading-tight">
+                  {metadata.join(" · ")}
+                </p>
+              );
+            }
+            return null;
+          })()
+        )}
       </div>
 
       {/* Selettore di raggio */}
@@ -370,7 +393,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                         )}
                         {!isTarget && (
                           <a
-                            href={`/?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
+                            href={`/clinic/${item.id || encodeURIComponent(item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-zinc-950 hover:underline inline-flex items-center gap-1 font-black uppercase text-[10px] tracking-wider"
