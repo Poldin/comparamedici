@@ -48,6 +48,28 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
     </div>
   );
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: targetName ? decodeURIComponent(targetName) : "Mercato Locale",
+          text: `Guarda il benchmark della reputazione online per ${targetName ? decodeURIComponent(targetName) : "Mercato Locale"}`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error("Errore durante la condivisione:", err);
+      }
+    } else {
+      // Fallback se la condivisione di sistema non è supportata (es. copia il link negli appunti)
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link copiato negli appunti!");
+      } catch (err) {
+        console.error("Impossibile copiare il link:", err);
+      }
+    }
+  };
+
   const GoogleIcon = () => (
     <div className="w-5 h-5 shrink-0 overflow-hidden relative">
       <img
@@ -127,13 +149,21 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
 
       {/* Intestazione Dashboard */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between w-full">
           <button
             onClick={() => router.push("/")}
             className="p-1 -ml-1 text-zinc-400 hover:text-zinc-900 rounded transition-colors text-sm font-bold flex items-center justify-center"
             title="Torna indietro"
           >
             👈 torna alla ricerca
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="px-3 py-1 bg-zinc-800 hover:bg-zinc-900 text-zinc-200 rounded-sm text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-sm"
+            title="Condividi questa dashboard"
+          >
+            💘condividi
           </button>
         </div>
         <h1 className="text-3xl font-black uppercase tracking-tight text-zinc-900 leading-none">
@@ -340,7 +370,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                         )}
                         {!isTarget && (
                           <a
-                            href={`/valutazione/${item.id}`} // Sostituisci questo URL con la rotta reale della tua scheda
+                            href={`/?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-zinc-950 hover:underline inline-flex items-center gap-1 font-black uppercase text-[10px] tracking-wider"

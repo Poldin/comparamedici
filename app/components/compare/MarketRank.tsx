@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ExternalLink } from "lucide-react"; 
+import { ExternalLink } from "lucide-react";
 
 // Definiamo i componenti Icona interni usando il trucco del ritaglio dell'immagine
 const GoogleIcon = () => (
@@ -30,7 +30,7 @@ interface CompetitorBase {
     total_reviews?: number | null;
     avg_review?: number | null;
     miodottore_reviews?: number | null;
-    g_maps_link?: string | null; 
+    g_maps_link?: string | null;
 }
 
 interface RankTrackerProps {
@@ -74,8 +74,7 @@ export default function MarketRankTracker({
         const subColor = isTargetRow ? "text-zinc-700" : "text-zinc-500";
 
         return (
-            <div className="grid grid-cols-3 gap-1 w-[190px] shrink-0 font-bold font-mono text-[11px] items-center">
-                {/* Colonna 1: Valore Sintetico */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[190px] shrink-0 font-bold font-mono text-[11px] items-center self-end sm:self-auto mt-1 sm:mt-0">                {/* Colonna 1: Valore Sintetico */}
                 <span className={`flex items-center justify-start font-black ${scoreColor}`}>
                     🔥 {comp.reputation_score}
                 </span>
@@ -97,18 +96,17 @@ export default function MarketRankTracker({
 
     const renderNameWithMap = (comp: CompetitorBase, prefix: string, isTargetRow: boolean) => {
         return (
-            <span className="truncate flex items-center gap-1.5 min-w-0 flex-1">
-                <span className="truncate">{prefix} {comp.name}</span>
+            <span className="flex items-center flex-wrap gap-1.5 min-w-0 flex-1">
+                <span className="wrap-break-word sm:truncate">{prefix} {comp.name}</span>
                 {comp.g_maps_link && (
                     <a
                         href={comp.g_maps_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex shrink-0 transition-colors p-0.5 rounded-sm ${
-                            isTargetRow 
-                                ? "text-zinc-500 hover:text-zinc-950 hover:bg-zinc-200" 
-                                : "text-zinc-500 hover:text-white hover:bg-zinc-800"
-                        }`}
+                        className={`inline-flex shrink-0 transition-colors p-0.5 rounded-sm ${isTargetRow
+                            ? "text-zinc-500 hover:text-zinc-950 hover:bg-zinc-200"
+                            : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                            }`}
                         title="Apri su Google Maps"
                         onClick={(e) => e.stopPropagation()} // Evita trigger indesiderati se la riga diventasse cliccabile
                     >
@@ -153,14 +151,14 @@ export default function MarketRankTracker({
 
                     <div className="space-y-1.5 text-xs font-mono">
                         {/* Sempre il 1° Classificato */}
-                        <div className={`p-1.5 rounded flex justify-between items-center gap-2 ${targetRank === 1 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
+                        <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 1 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
                             {renderNameWithMap(rankedCompetitors[0], "🥇 #1", targetRank === 1)}
                             {renderRowStats(rankedCompetitors[0], targetRank === 1)}
                         </div>
 
                         {/* Il 2° Classificato (se presente nel mercato) */}
                         {totalPoints > 1 && (
-                            <div className={`p-1.5 rounded flex justify-between items-center gap-2 ${targetRank === 2 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
+                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 2 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
                                 {renderNameWithMap(rankedCompetitors[1], "🥈 #2", targetRank === 2)}
                                 {renderRowStats(rankedCompetitors[1], targetRank === 2)}
                             </div>
@@ -168,7 +166,7 @@ export default function MarketRankTracker({
 
                         {/* Il 3° Classificato (se presente nel mercato) */}
                         {totalPoints > 2 && (
-                            <div className={`p-1.5 rounded flex justify-between items-center gap-2 ${targetRank === 3 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
+                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 3 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
                                 {renderNameWithMap(rankedCompetitors[2], "🥉 #3", targetRank === 3)}
                                 {renderRowStats(rankedCompetitors[2], targetRank === 3)}
                             </div>
@@ -181,7 +179,7 @@ export default function MarketRankTracker({
 
                         {/* Mostra il 4° posto solo se l'utente è dal 5° in giù per non avere duplicati */}
                         {targetRank > 3 && targetRankIndex !== 3 && (
-                            <div className="p-1.5 text-zinc-500/80 flex justify-between items-center gap-4">
+                            <div className="p-1.5 text-zinc-500/80 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                                 {renderNameWithMap(rankedCompetitors[3], "#4", false)}
                                 {renderRowStats(rankedCompetitors[3], false)}
                             </div>
@@ -194,7 +192,7 @@ export default function MarketRankTracker({
 
                         {/* Riga dello studio target se si trova fuori dal podio delle prime 3 posizioni */}
                         {targetRank > 3 && targetRecord && (
-                            <div className="p-1.5 bg-white text-zinc-950 font-black rounded shadow-md animate-in fade-in duration-300 flex justify-between items-center gap-4">
+                            <div className="p-1.5 bg-white text-zinc-950 font-black rounded shadow-md animate-in fade-in duration-300 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                                 {renderNameWithMap(targetRecord, `🎖️ #${targetRank}`, true)}
                                 {renderRowStats(targetRecord, true)}
                             </div>
