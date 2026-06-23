@@ -67,7 +67,7 @@ export default function MarketRankTracker({
     // Renderizza il blocco metriche diviso in 3 colonne perfettamente incolonnate a sinistra
     const renderRowStats = (comp: CompetitorBase, isTargetRow: boolean) => {
         const gReviews = comp.total_reviews || 0;
-        const mdReviews = comp.miodottore_reviews ?? (gReviews ? Math.round(gReviews * 0.3) : 0);
+        const mdReviews = comp.miodottore_reviews || 0;
 
         // Gestione colori dinamici in base a se la riga è quella attiva/target o meno
         const scoreColor = isTargetRow ? "text-zinc-950" : "text-white";

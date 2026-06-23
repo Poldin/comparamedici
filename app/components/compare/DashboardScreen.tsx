@@ -2,25 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLocalBenchmarks } from "./actions";
+import { getLocalBenchmarks, type BenchmarkRecord } from "./actions";
 import { Button } from "@/components/ui/button";
 import MarketRankTracker from "./MarketRank";
 import MarketCurveChart from "./MarketCurvechart";
 
-interface BenchmarkRecord {
-  id: string;
-  name: string;
-  google_category: string | null;
-  avg_review: number | null;
-  total_reviews: number | null;
-  website_url: string | null;
-  online_booking_url: string | null;
-  g_maps_link: string | null;
-  distance_km: number;
-  reputation_score: number;
-  address: string | null;
-  phone: string | null;
-}
 
 interface Props {
   lat: number;
@@ -271,7 +257,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                 </div>
                 <div className="text-xl font-black font-mono text-white flex items-center gap-1.5">
                   <MioDottoreIcon />
-                  <span>{targetRecord.total_reviews}</span>
+                  <span>{targetRecord.miodottore_reviews ?? 0}</span>
                 </div>
               </div>
 

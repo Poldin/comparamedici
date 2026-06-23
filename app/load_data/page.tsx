@@ -70,7 +70,9 @@ export default function MappeScraperPage() {
                 const telefono = item.querySelector(config.telefonoSelector)?.textContent?.trim() || 'N/D';
                 const sitoEl = item.querySelector(config.sitoSelector);
                 const sitoWeb = sitoEl?.getAttribute('href') || 'N/D';
-                const rating = item.querySelector(config.ratingSelector)?.textContent?.trim() || 'N/D';
+                const ratingRaw = item.querySelector(config.ratingSelector)?.textContent?.trim() || 'N/D';
+                // Sostituisce la virgola italiana con il punto decimale (es. "4,7" -> "4.7")
+                const rating = ratingRaw !== 'N/D' ? ratingRaw.replace(',', '.') : 'N/D';
                 const recensioniRaw = item.querySelector(config.recensioniSelector)?.textContent?.trim() || '';
                 const recensioni = recensioniRaw.replace(/[()]/g, '') || '0';
 
