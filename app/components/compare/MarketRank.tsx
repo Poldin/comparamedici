@@ -29,6 +29,7 @@ interface CompetitorBase {
     reputation_score: number;
     total_reviews?: number | null;
     avg_review?: number | null;
+    miodottore_avg?: number | null;
     miodottore_reviews?: number | null;
     g_maps_link?: string | null;
     dp_link_url?: string | null;
@@ -70,26 +71,47 @@ export default function MarketRankTracker({
         const gReviews = comp.total_reviews || 0;
         const mdReviews = comp.miodottore_reviews || 0;
 
-        // Gestione colori dinamici in base a se la riga è quella attiva/target o meno
+        // Recuperiamo i voti medi dal database
+        const gRating = comp.avg_review;
+        const mdRating = comp.miodottore_avg;
+
+        // Funzione helper interna per formattare il voto con un decimale fisso (es. 5 -> "5.0")
+        const formatRating = (rating: number | null | undefined) => {
+            if (rating === null || rating === undefined || rating === 0) return null;
+            return Number(rating).toFixed(1);
+        };
+
+        const formattedGIRating = formatRating(gRating);
+        const formattedMdRating = formatRating(mdRating);
+
+        // Gestione colori dinamici
         const scoreColor = isTargetRow ? "text-zinc-950" : "text-white";
         const subColor = isTargetRow ? "text-zinc-700" : "text-zinc-500";
 
         return (
-            <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[190px] shrink-0 font-bold font-mono text-[11px] items-center self-end sm:self-auto mt-1 sm:mt-0">                {/* Colonna 1: Valore Sintetico */}
+            /* Larghezza impostata a w-[250px] per ospitare comodamente i decimali aggiuntivi ".0" */
+            <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[250px] shrink-0 font-bold font-mono text-[11px] items-center self-end sm:self-auto mt-1 sm:mt-0">
+                {/* Colonna 1: Valore Sintetico */}
                 <span className={`flex items-center justify-start font-black ${scoreColor}`}>
                     🔥 {comp.reputation_score}
                 </span>
 
-                {/* Colonna 2: Recensioni Google (Icona bloccata a sinistra) */}
-                <span className={`flex items-center justify-start gap-1 ${subColor}`}>
+                {/* Colonna 2: Recensioni Google */}
+                <span className={`flex items-center justify-start gap-1 flex-wrap ${subColor}`}>
                     <GoogleIcon />
                     <span>{gReviews}</span>
+                    {formattedGIRating && (
+                        <span className="text-[10px] opacity-85 font-sans">({formattedGIRating})</span>
+                    )}
                 </span>
 
-                {/* Colonna 3: Recensioni MioDottore (Icona bloccata a sinistra) */}
-                <span className={`flex items-center justify-start gap-1 ${subColor}`}>
+                {/* Colonna 3: Recensioni MioDottore */}
+                <span className={`flex items-center justify-start gap-1 flex-wrap ${subColor}`}>
                     <MioDottoreIcon />
                     <span>{mdReviews}</span>
+                    {formattedMdRating && (
+                        <span className="text-[10px] opacity-85 font-sans">({formattedMdRating})</span>
+                    )}
                 </span>
             </div>
         );

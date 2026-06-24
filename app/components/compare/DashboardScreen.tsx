@@ -471,23 +471,29 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                     )}
                   </div>
 
-                  {/* Blocco metriche inline con fiammella davanti allo score */}
-                  <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[190px] shrink-0 font-bold font-mono text-[11px] items-start self-end sm:self-auto pl-8 sm:pl-0">
-                    {/* Colonna 1: Fiammella davanti allo score */}
+                  {/* Blocco metriche inline sulla destra della riga */}
+                  <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[250px] shrink-0 font-bold font-mono text-[11px] items-center self-end sm:self-auto pl-8 sm:pl-0 mt-1 sm:mt-0">
+                    {/* Colonna 1: Score */}
                     <span className="flex items-center justify-start font-black text-zinc-950">
                       🔥 {item.reputation_score}
                     </span>
 
-                    {/* Colonna 2: Recensioni Google con icona piccola */}
-                    <span className="flex items-center justify-start gap-1 text-zinc-500">
+                    {/* Colonna 2: Google + Media Decimale Condizionale */}
+                    <span className="flex items-center justify-start gap-1 flex-wrap text-zinc-500">
                       <GoogleIconSmall />
                       <span>{item.total_reviews || 0}</span>
+                      {item.avg_review && item.avg_review > 0 && (
+                        <span className="text-[10px] opacity-85 font-sans">({Number(item.avg_review).toFixed(1)})</span>
+                      )}
                     </span>
 
-                    {/* Colonna 3: Recensioni MioDottore con icona piccola */}
-                    <span className="flex items-center justify-start gap-1 text-zinc-500">
+                    {/* Colonna 3: MioDottore + Media Decimale Condizionale */}
+                    <span className="flex items-center justify-start gap-1 flex-wrap text-zinc-500">
                       <MioDottoreIconSmall />
                       <span>{item.miodottore_reviews || 0}</span>
+                      {item.miodottore_avg && item.miodottore_avg > 0 && (
+                        <span className="text-[10px] opacity-85 font-sans">({Number(item.miodottore_avg).toFixed(1)})</span>
+                      )}
                     </span>
                   </div>
 
