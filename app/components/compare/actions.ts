@@ -98,7 +98,7 @@ export async function getLocalBenchmarks(
         // 1. TROVIAMO I MASSIMI REALI NEL MERCATO LOCALE SELEZIONATO
         // Questo fa sì che il punteggio sia relativo a chi fa meglio in quella specifica zona!
         const maxGoogleReviewsInArea = Math.max(...rawData.map((item: any) => item.total_reviews || 0), 100);
-        
+
         const maxMdReviewsInArea = Math.max(...rawData.map((item: any) => {
             if (item.comparator_link_g_dp && item.comparator_link_g_dp.length > 0) {
                 const dp = item.comparator_link_g_dp.map((l: any) => l.comparator_out_dp).filter(Boolean);
@@ -131,21 +131,65 @@ export async function getLocalBenchmarks(
                     dpLinkUrl = dpRecords[0].dp_link_url;
                 }
             }
-            const mdReviews = miodottoreReviews || 0;
             // ---------------------------------
 
             // --- CALCOLO DEL REPUTATION SCORE DINAMICO ---
-            // Distribuzione Pesi:
-            // - Qualità Google (Media): max 50 punti (Voto * 10)
-            // - Quantità Google: max 25 punti (Proporzionale al leader locale)
-            // - Quantità MioDottore: max 25 punti (Proporzionale al leader locale)
-            
-            const qualityPoints = avgReview * 10;
-            const googleQuantityPoints = (googleReviews / maxGoogleReviewsInArea) * 25;
-            const mdQuantityPoints = (mdReviews / maxMdReviewsInArea) * 25;
+            // --- NUOVA LOGICA AVANZATA A 7 SCAGLIONI ---
+            const gReviews = item.total_reviews || 0;
+            const gAvg = item.avg_review || 0;
+            const mdReviews = miodottoreReviews || 0;
 
-            const calculatedScore = Math.floor(qualityPoints + googleQuantityPoints + mdQuantityPoints);
+            // Cumulato pesato tra Google e MioDottore
+            const totalReviewsCount = gReviews + mdReviews;
+
+            let trustFactor = 0.3;
+            let volumePoints = 0;
+
+            if (totalReviewsCount <= 15) {
+                // Scaglione 1: 0 - 15 (Basso basso)
+                trustFactor = 0.3;
+                volumePoints = (totalReviewsCount / 15) * 5; // max 5 punti
+            }
+            else if (totalReviewsCount > 15 && totalReviewsCount <= 40) {
+                // Scaglione 2: 16 - 40 (Interessante)
+                trustFactor = 0.5;
+                volumePoints = 5 + ((totalReviewsCount - 15) / 25) * 5; // max 10 punti
+            }
+            else if (totalReviewsCount > 40 && totalReviewsCount <= 100) {
+                // Scaglione 3: 41 - 100 (Molto interessante)
+                trustFactor = 0.7;
+                volumePoints = 10 + ((totalReviewsCount - 40) / 60) * 10; // max 20 punti
+            }
+            else if (totalReviewsCount > 100 && totalReviewsCount <= 250) {
+                // Scaglione 4: 101 - 250 (Consolidato)
+                trustFactor = 0.85;
+                volumePoints = 20 + ((totalReviewsCount - 100) / 150) * 5; // max 25 punti
+            }
+            else if (totalReviewsCount > 250 && totalReviewsCount <= 500) {
+                // Scaglione 5: 251 - 500 (Leader Locale)
+                trustFactor = 0.95;
+                volumePoints = 25 + ((totalReviewsCount - 250) / 250) * 5; // max 30 punti
+            }
+            else if (totalReviewsCount > 500 && totalReviewsCount <= 1000) {
+                // Scaglione 6: 501 - 1000 (Gigante del mercato)
+                trustFactor = 1.0;
+                volumePoints = 30 + ((totalReviewsCount - 500) / 500) * 10; // max 40 punti
+            }
+            else {
+                // Scaglione 7: Oltre 1000 (Dominio assoluto)
+                trustFactor = 1.0;
+                volumePoints = 40; // Raggiunto il cap massimo di volume
+            }
+
+            // Calcolo dei punti qualità (voto Google su base 60)
+            const qualityPoints = gAvg * 12; // Se ha 5.0 -> 60 punti. Se ha 4.5 -> 54 punti.
+
+            // Calcolo finale combinato
+            const calculatedScore = Math.floor((qualityPoints * trustFactor) + volumePoints);
             const finalScore = Math.max(0, Math.min(calculatedScore, 100));
+
+
+            //--------------------------------------------
 
             // Distanza pitagorica approssimativa
             const distance = Math.sqrt(
