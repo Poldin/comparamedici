@@ -31,6 +31,7 @@ interface CompetitorBase {
     avg_review?: number | null;
     miodottore_reviews?: number | null;
     g_maps_link?: string | null;
+    dp_link_url?: string | null;
 }
 
 interface RankTrackerProps {
@@ -103,14 +104,33 @@ export default function MarketRankTracker({
                         href={comp.g_maps_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex shrink-0 transition-colors p-0.5 rounded-sm ${isTargetRow
-                            ? "text-zinc-500 hover:text-zinc-950 hover:bg-zinc-200"
-                            : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                        className={`inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs ${isTargetRow
+                            ? "bg-zinc-200 border-zinc-300 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                            : "bg-zinc-800/60 border-zinc-700/50 text-zinc-200 hover:text-white hover:bg-zinc-700 hover:border-zinc-600 active:scale-95"
                             }`}
                         title="Apri su Google Maps"
-                        onClick={(e) => e.stopPropagation()} // Evita trigger indesiderati se la riga diventasse cliccabile
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <ExternalLink size={13} className="stroke-[2.5]" />
+                        <span>vedi su</span>
+                        <GoogleIcon />
+                    </a>
+                )}
+
+                {/* Pulsante MioDottore (se presente dp_link_url) */}
+                {comp.dp_link_url && (
+                    <a
+                        href={comp.dp_link_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs ${isTargetRow
+                            ? "bg-zinc-200 border-zinc-300 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                            : "bg-zinc-800/60 border-zinc-700/50 text-zinc-200 hover:text-white hover:bg-zinc-700 hover:border-zinc-600 active:scale-95"
+                            }`}
+                        title="Apri profilo MioDottore"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <span>vedi su</span>
+                        <MioDottoreIcon />
                     </a>
                 )}
                 {isTargetRow && prefix !== "🎖️" && <span className="shrink-0">👈</span>}

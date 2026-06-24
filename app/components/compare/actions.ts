@@ -13,6 +13,7 @@ export interface BenchmarkRecord {
     website_url: string | null;
     online_booking_url: string | null;
     g_maps_link: string | null;
+    dp_link_url: string | null;
     distance_km: number;
     reputation_score: number;
     address: string | null;
@@ -80,7 +81,8 @@ export async function getLocalBenchmarks(
                         id,
                         tot_dc_reviews,
                         avg_grade,
-                        created_at
+                        created_at,
+                        dp_link_url
                     )
                 )
             `)
@@ -112,6 +114,7 @@ export async function getLocalBenchmarks(
             // --- GESTIONE DATI MIODOTTORE ---
             let miodottoreReviews: number | null = null;
             let miodottoreAvg: number | null = null;
+            let dpLinkUrl: string | null = null;
 
             if (item.comparator_link_g_dp && item.comparator_link_g_dp.length > 0) {
                 const dpRecords = item.comparator_link_g_dp
@@ -125,6 +128,7 @@ export async function getLocalBenchmarks(
 
                     miodottoreReviews = dpRecords[0].tot_dc_reviews;
                     miodottoreAvg = dpRecords[0].avg_grade;
+                    dpLinkUrl = dpRecords[0].dp_link_url;
                 }
             }
             const mdReviews = miodottoreReviews || 0;
@@ -160,6 +164,7 @@ export async function getLocalBenchmarks(
                 website_url: item.website_url || null,
                 online_booking_url: item.online_booking_url || null,
                 g_maps_link: item.g_maps_link,
+                dp_link_url: dpLinkUrl,
                 address: item.address,
                 phone: item.phone,
                 distance_km: distance,

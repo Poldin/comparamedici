@@ -66,6 +66,26 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
     </div>
   );
 
+  const GoogleIconSmall = () => (
+    <div className="w-3.5 h-3.5 shrink-0 overflow-hidden relative">
+      <img
+        src="/google-icon-logo.svg"
+        alt="Google"
+        className="max-w-none absolute left-0 top-0 w-auto h-3.5"
+      />
+    </div>
+  );
+
+  const MioDottoreIconSmall = () => (
+    <div className="w-3.5 h-3.5 shrink-0 overflow-hidden relative">
+      <img
+        src="/mdlogo.svg"
+        alt="MioDottore"
+        className="max-w-none absolute left-0 top-0 w-auto h-3.5"
+      />
+    </div>
+  );
+
   useEffect(() => {
     async function loadDashboard() {
       setLoading(true);
@@ -157,7 +177,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
           {targetName ? decodeURIComponent(targetName) : "Mercato Locale"}
         </h1>
 
-        {/* NUOVO SOTTOTITOLO DINAMICO */}
+        {/* SOTTOTITOLO DINAMICO CON BOTTONI TARGET */}
         {targetRecord && (
           (() => {
             // Creiamo un array inserendo solo i campi che esistono e non sono vuoti
@@ -167,15 +187,49 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
               targetRecord.phone
             ].filter(Boolean); // Rimuove null, undefined o stringhe vuote
 
-            // Se l'array ha almeno un elemento, lo mostriamo unendo i testi con il pallino " · "
-            if (metadata.length > 0) {
-              return (
-                <p className="text-xs font-mono font-bold uppercase text-zinc-400 mt-1 leading-tight">
-                  {metadata.join(" · ")}
-                </p>
-              );
-            }
-            return null;
+            return (
+              <div className="mt-2 space-y-2">
+                {/* Metadati (Categoria, Indirizzo, Telefono) */}
+                {metadata.length > 0 && (
+                  <p className="text-xs font-mono font-bold uppercase text-zinc-400 leading-tight">
+                    {metadata.join(" · ")}
+                  </p>
+                )}
+
+                {/* Bottoni veloci per il Target in cima alla pagina */}
+                {(targetRecord.g_maps_link || targetRecord.dp_link_url) && (
+                  <div className="flex flex-wrap gap-2 items-center pt-0.5">
+                    {/* Bottone Google Maps Target */}
+                    {targetRecord.g_maps_link && (
+                      <a
+                        href={targetRecord.g_maps_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border border-zinc-300 text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs bg-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                        title="Apri su Google Maps"
+                      >
+                        <span>vedi in</span>
+                        <GoogleIconSmall />
+                      </a>
+                    )}
+
+                    {/* Bottone MioDottore Target */}
+                    {targetRecord.dp_link_url && (
+                      <a
+                        href={targetRecord.dp_link_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border border-zinc-300 text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs bg-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                        title="Apri profilo MioDottore"
+                      >
+                        <span>vedi in</span>
+                        <MioDottoreIconSmall />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
           })()
         )}
       </div>
@@ -236,7 +290,6 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                 <div className="text-xl font-black font-mono text-white flex items-center gap-1.5">
                   <span>🔥</span>
                   <span>{targetRecord.reputation_score}</span>
-                  <span className="text-[10px] font-bold text-zinc-600 font-sans">/100</span>
                 </div>
               </div>
 
@@ -290,7 +343,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
         <div className="p-5 border border-zinc-200 rounded-xl bg-white space-y-1">
           <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">🤏Punteggio Medio Area</div>
           <div className="text-3xl font-black tracking-tight">
-            {avgMarketScore}<span className="text-sm font-normal text-zinc-400">/100</span>
+            {avgMarketScore}
           </div>
           <div className="text-xs text-zinc-400">Livello di reputazione medio</div>
         </div>
@@ -343,7 +396,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                         {item.name}
                         {isTarget && (
                           <span className="bg-zinc-950 text-white text-[9px] font-mono font-black uppercase px-1.5 py-0.5 rounded tracking-wider">
-                            🔥🔥🔥
+                            🫶
                           </span>
                         )}
                       </h4>
@@ -361,49 +414,81 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                       )}
                     </div>
 
-                    {(item.address || item.phone || item.g_maps_link) && (
-                      <div className="pl-8 text-[11px] text-zinc-400 font-mono space-y-0.5 leading-tight">
+                    {(item.address || item.phone || item.g_maps_link || item.dp_link_url) && (
+                      <div className="pl-8 text-[11px] text-zinc-400 font-mono space-y-1.5 leading-tight mt-1">
                         {item.address && <div className="truncate">📍 {item.address}</div>}
                         {item.phone && <div>📞 {item.phone}</div>}
-                        {item.g_maps_link && (
-                          <div className="pt-0.5">
+
+                        <div className="pt-0.5 flex flex-wrap gap-2 items-center">
+                          {/* Bottone Google Maps */}
+                          {item.g_maps_link && (
                             <a
                               href={item.g_maps_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-zinc-500 hover:text-zinc-900 hover:underline inline-flex items-center gap-1 font-bold uppercase text-[10px] tracking-wider"
+                              className={`inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs ${isTarget
+                                ? "bg-zinc-200 border-zinc-300 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                                : "bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-200 active:scale-95"
+                                }`}
+                              title="Apri su Google Maps"
                             >
-                              🗺️ Vedi su Google Maps ↗
+                              <span>vedi in</span>
+                              <GoogleIconSmall />
                             </a>
-                          </div>
-                        )}
-                        {!isTarget && (
-                          <a
-                            href={`/clinic/${item.id || encodeURIComponent(item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-zinc-950 hover:underline inline-flex items-center gap-1 font-black uppercase text-[10px] tracking-wider"
-                          >
-                            📊 Apri Valutazione ↗
-                          </a>
-                        )}
+                          )}
+
+                          {/* Bottone MioDottore */}
+                          {item.dp_link_url && (
+                            <a
+                              href={item.dp_link_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`inline-flex shrink-0 items-center gap-1.5 transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs ${isTarget
+                                ? "bg-zinc-200 border-zinc-300 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-300/80 active:scale-95"
+                                : "bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-200 active:scale-95"
+                                }`}
+                              title="Apri profilo MioDottore"
+                            >
+                              <span>vedi in</span>
+                              <MioDottoreIconSmall />
+                            </a>
+                          )}
+
+                          {/* Bottone Analisi Valutazione (nascondi se è lo studio dell'utente corrente) */}
+                          {!isTarget && (
+                            <a
+                              href={`/clinic/${item.id || encodeURIComponent(item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex shrink-0 items-center transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs bg-zinc-950 border-zinc-900 text-zinc-200 hover:text-white hover:bg-zinc-850 active:scale-95"
+                              title="Apri l'analisi della valutazione completa"
+                            >
+                              vedi valutazione ↗
+                            </a>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="sm:text-right space-y-1 min-w-[160px] pl-8 sm:pl-0">
-                    <div className="flex justify-between sm:justify-end items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 sm:hidden">Reputation Score:</span>
-                      <span className="font-mono font-black text-sm text-zinc-900">
-                        {item.reputation_score}<span className="text-[10px] font-normal text-zinc-400">/100</span>
-                      </span>
-                    </div>
-                    <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-zinc-800 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${item.reputation_score}%` }}
-                      />
-                    </div>
+                  {/* Blocco metriche inline con fiammella davanti allo score */}
+                  <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[190px] shrink-0 font-bold font-mono text-[11px] items-start self-end sm:self-auto pl-8 sm:pl-0">
+                    {/* Colonna 1: Fiammella davanti allo score */}
+                    <span className="flex items-center justify-start font-black text-zinc-950">
+                      🔥 {item.reputation_score}
+                    </span>
+
+                    {/* Colonna 2: Recensioni Google con icona piccola */}
+                    <span className="flex items-center justify-start gap-1 text-zinc-500">
+                      <GoogleIconSmall />
+                      <span>{item.total_reviews || 0}</span>
+                    </span>
+
+                    {/* Colonna 3: Recensioni MioDottore con icona piccola */}
+                    <span className="flex items-center justify-start gap-1 text-zinc-500">
+                      <MioDottoreIconSmall />
+                      <span>{item.miodottore_reviews || 0}</span>
+                    </span>
                   </div>
 
                 </div>
