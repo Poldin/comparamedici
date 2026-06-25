@@ -163,13 +163,13 @@ export default function MarketRankTracker({
             {/* SEZIONE 1: GRAFICO A COLONNE ORIZZONTALI */}
             <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-500">
-                    <span>Distanza dal Podio (Reputation Score):</span>
+                    <span>podio del reputation score</span>
                     {totalPoints > 4 && (
                         <button
                             onClick={() => setShowAllCompetitors(!showAllCompetitors)}
                             className="text-zinc-400 hover:text-emerald-400 border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 rounded-md text-[9px] transition-all cursor-pointer font-bold uppercase"
                         >
-                            {showAllCompetitors ? "Filtra Podio ⌃" : `Mostra tutti i ${totalPoints} record ▾`}
+                            {showAllCompetitors ? "vedi podio" : `vedi tutti ${totalPoints}`}
                         </button>
                     )}
                 </div>

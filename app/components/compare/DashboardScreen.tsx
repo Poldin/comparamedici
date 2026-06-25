@@ -6,6 +6,7 @@ import { getLocalBenchmarks, type BenchmarkRecord } from "./actions";
 import { Button } from "@/components/ui/button";
 import MarketRankTracker from "./MarketRank";
 import MarketCurveChart from "./MarketCurvechart";
+import ReputationInfoDialog from "./ReputationInfoDialog";
 
 
 interface Props {
@@ -262,10 +263,11 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
 
             {/* Intestazione */}
             <div className="flex justify-between items-start">
-              <div className="">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500">
                   sintesi reputazione online
                 </div>
+                <ReputationInfoDialog />
               </div>
             </div>
 
