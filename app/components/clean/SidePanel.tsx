@@ -13,7 +13,8 @@ interface ReconciliationSheetProps {
     onDeleteActivity: () => Promise<void>;
     onSaveGoogle: (id: string, data: any) => Promise<any>;
     onCreateDP: (googleId: string, dpData: any) => Promise<any>;
-    onUpdateDP: (dpId: string, currentName: string, currentCategory: string) => Promise<any>;
+    // Aggiornato per accettare l'intero oggetto dei dati modificati
+    onUpdateDP: (dpId: string, dpData: any) => Promise<any>; 
     onRemoveLink: (linkId: string, googleId: string) => Promise<any>;
 }
 
@@ -47,6 +48,14 @@ export function ReconciliationSheet({
     const [newDpAvgGrade, setNewDpAvgGrade] = useState("");
     const [newDpLinkUrl, setNewDpLinkUrl] = useState("");
     const [isAddingNew, setIsAddingNew] = useState(false);
+    
+    // Stati per la MODIFICA di un record MioDottore esistente
+    const [editingDpId, setEditingDpId] = useState<string | null>(null);
+    const [editDpName, setEditDpName] = useState("");
+    const [editDpCategory, setEditDpCategory] = useState("");
+    const [editDpAvgGrade, setEditDpAvgGrade] = useState("");
+    const [editDpTotalReviews, setEditDpTotalReviews] = useState("");
+    const [editDpLinkUrl, setEditDpLinkUrl] = useState("");
 
     useEffect(() => {
         if (selectedRecord) {
@@ -67,6 +76,7 @@ export function ReconciliationSheet({
             setNewDpAvgGrade("");
             setNewDpLinkUrl("");
             setIsAddingNew(false);
+            setEditingDpId(null);
         }
     }, [selectedRecord]);
 
@@ -97,17 +107,30 @@ export function ReconciliationSheet({
             dp_link_url: newDpLinkUrl || null
         };
 
-        // Invia i dati al DB e riceve il record aggiornato con le relazioni aggiornate
         const updatedRecord = await onCreateDP(currentRecord.id, fullDpData);
         if (updatedRecord) setCurrentRecord(updatedRecord);
 
-        // Reset degli stati del form
         setNewDpName("");
         setNewDpCategory("");
         setNewDpTotalReviews("");
         setNewDpAvgGrade("");
         setNewDpLinkUrl("");
         setIsAddingNew(false);
+    };
+
+    const handleUpdateDPSubmit = async (dpId: string) => {
+        const updatedRecord = await onUpdateDP(dpId, {
+            name: editDpName.trim(),
+            dp_category: editDpCategory || null,
+            avg_grade: editDpAvgGrade ? parseFloat(editDpAvgGrade) : null,
+            tot_dc_reviews: editDpTotalReviews ? parseInt(editDpTotalReviews, 10) : null,
+            dp_link_url: editDpLinkUrl || null
+        });
+    
+        if (updatedRecord) {
+            setCurrentRecord(updatedRecord);
+            setEditingDpId(null); // Esce dalla modalità modifica
+        }
     };
 
     return (
@@ -198,24 +221,77 @@ export function ReconciliationSheet({
                             )}
                         </div>
 
-                        {/* Lista dei Record Collegati legata allo stato locale */}
+                        {/* Lista dei Record Collegati */}
                         <div className="space-y-3">
                             {currentRecord.comparator_link_g_dp && currentRecord.comparator_link_g_dp.length > 0 ? (
                                 currentRecord.comparator_link_g_dp.map((link: any) => {
                                     const dp = link.comparator_out_dp;
+                                    if (!dp) return null;
+
+                                    const isEditingThis = editingDpId === dp.id;
+
+                                    if (isEditingThis) {
+                                        // FORM DI MODIFICA IN LINEA
+                                        return (
+                                            <div key={link.id} className="p-4 border rounded-xl bg-amber-50/20 border-amber-200 space-y-3 animate-in fade-in duration-100">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Modifica Record MioDottore</span>
+                                                    <button className="text-xs text-slate-400 hover:text-slate-600 underline" onClick={() => setEditingDpId(null)}>
+                                                        Annulla
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">Nome Professionista / Struttura</label>
+                                                        <Input value={editDpName} onChange={(e) => setEditDpName(e.target.value)} className="bg-white h-9" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">Categoria</label>
+                                                        <Input value={editDpCategory} onChange={(e) => setEditDpCategory(e.target.value)} className="bg-white h-9" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">Media Voto</label>
+                                                            <Input type="number" step="0.1" min="1" max="5" value={editDpAvgGrade} onChange={(e) => setEditDpAvgGrade(e.target.value)} className="bg-white h-9" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">Tot. Recensioni</label>
+                                                            <Input type="number" value={editDpTotalReviews} onChange={(e) => setEditDpTotalReviews(e.target.value)} className="bg-white h-9" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-semibold text-slate-500 mb-0.5 block">Link Profilo (URL)</label>
+                                                        <Input value={editDpLinkUrl} onChange={(e) => setEditDpLinkUrl(e.target.value)} className="bg-white h-9" />
+                                                    </div>
+                                                </div>
+
+                                                <Button size="sm" className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-xs mt-1" onClick={() => handleUpdateDPSubmit(dp.id)}>
+                                                    Salva Modifiche
+                                                </Button>
+                                            </div>
+                                        );
+                                    }
+
+                                    // VISTA STANDARD DEL RECORD
                                     return (
                                         <div key={link.id} className="p-4 border rounded-xl bg-slate-50/50 border-slate-200 hover:border-emerald-200 transition-all space-y-3 relative group">
                                             <div className="flex justify-between items-start pr-8">
                                                 <div>
-                                                    <p className="font-bold text-sm text-slate-900 cursor-pointer hover:underline"
-                                                        onClick={async () => {
-                                                            const updated = await onUpdateDP(link.dp_id, dp?.name, dp?.dp_category);
-                                                            if (updated) setCurrentRecord(updated);
+                                                    <p className="font-bold text-sm text-slate-900 cursor-pointer hover:text-amber-600 hover:underline transition-colors flex items-center gap-1.5"
+                                                        title="Clicca qui per modificare il record"
+                                                        onClick={() => {
+                                                            setEditingDpId(dp.id);
+                                                            setEditDpName(dp.name || "");
+                                                            setEditDpCategory(dp.dp_category || "");
+                                                            setEditDpAvgGrade(dp.avg_grade?.toString() || "");
+                                                            setEditDpTotalReviews(dp.tot_dc_reviews?.toString() || "");
+                                                            setEditDpLinkUrl(dp.dp_link_url || "");
                                                         }}
                                                     >
-                                                        {dp?.name || "Nessun nome"}
+                                                        {dp.name || "Nessun nome"} <span className="text-[10px] text-slate-400 font-normal opacity-0 group-hover:opacity-100 transition-opacity">(Modifica ✏️)</span>
                                                     </p>
-                                                    <p className="text-xs text-slate-500 mt-0.5">Cat: {dp?.dp_category || "N/A"}</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">Cat: {dp.dp_category || "N/A"}</p>
                                                 </div>
 
                                                 <Button
@@ -223,7 +299,6 @@ export function ReconciliationSheet({
                                                     variant="ghost"
                                                     className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 absolute right-3 top-3 transition-colors"
                                                     onClick={async () => {
-                                                        // Passiamo l'id del link E l'id del record google corrente
                                                         const updatedRecord = await onRemoveLink(link.id, currentRecord.id);
                                                         if (updatedRecord) setCurrentRecord(updatedRecord);
                                                     }}
@@ -236,16 +311,16 @@ export function ReconciliationSheet({
                                                 <div className="space-y-0.5 border-r">
                                                     <span className="text-[10px] text-slate-400 font-medium block uppercase">Punteggio</span>
                                                     <span className="font-semibold text-slate-700 flex items-center justify-center gap-0.5">
-                                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {dp?.avg_grade ?? "-"}
+                                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {dp.avg_grade ?? "-"}
                                                     </span>
                                                 </div>
                                                 <div className="space-y-0.5 border-r">
                                                     <span className="text-[10px] text-slate-400 font-medium block uppercase">Recensioni</span>
-                                                    <span className="font-semibold text-slate-700">{dp?.tot_dc_reviews ?? 0}</span>
+                                                    <span className="font-semibold text-slate-700">{dp.tot_dc_reviews ?? 0}</span>
                                                 </div>
                                                 <div className="space-y-0.5 flex flex-col justify-center items-center">
                                                     <span className="text-[10px] text-slate-400 font-medium block uppercase">Link DP</span>
-                                                    {dp?.dp_link_url ? (
+                                                    {dp.dp_link_url ? (
                                                         <a href={dp.dp_link_url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-0.5 font-medium underline">
                                                             Vedi <ExternalLink className="w-3 h-3" />
                                                         </a>
@@ -277,12 +352,20 @@ export function ReconciliationSheet({
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="md:col-span-2">
+                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Nome Professionista / Struttura</label>
+                                        <Input value={newDpName} onChange={(e) => setNewDpName(e.target.value)} placeholder="Dott. Mario Rossi" className="bg-white h-9" />
+                                    </div>
                                     <div>
-                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Media Voto (Real)</label>
+                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Categoria</label>
+                                        <Input value={newDpCategory} onChange={(e) => setNewDpCategory(e.target.value)} placeholder="Dentista" className="bg-white h-9" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Media Voto</label>
                                         <Input type="number" step="0.1" min="1" max="5" value={newDpAvgGrade} onChange={(e) => setNewDpAvgGrade(e.target.value)} placeholder="4.8" className="bg-white h-9" />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Tot. Recensioni (Integer)</label>
+                                        <label className="text-[11px] font-semibold text-slate-600 mb-0.5 block">Tot. Recensioni</label>
                                         <Input type="number" value={newDpTotalReviews} onChange={(e) => setNewDpTotalReviews(e.target.value)} placeholder="24" className="bg-white h-9" />
                                     </div>
                                     <div className="md:col-span-2">

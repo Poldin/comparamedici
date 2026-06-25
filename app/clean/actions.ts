@@ -51,7 +51,8 @@ export async function getGoogleRecords(
     search?: string, 
     categories?: string[], 
     page: number = 1, 
-    pageSize: number = 100
+    pageSize: number = 100,
+    onlyMioDottore: boolean = false
   ) {
     try {
       const from = (page - 1) * pageSize;
@@ -91,6 +92,11 @@ export async function getGoogleRecords(
   
       if (categories && categories.length > 0) {
         query = query.in("google_category", categories);
+      }
+
+      if (onlyMioDottore) {
+        // Filtra i record che contengono 'miodottore' o 'docplanner' (case-insensitive)
+        query = query.or("online_booking_url.ilike.%miodottore%,online_booking_url.ilike.%docplanner%");
       }
   
       const { data, error, count } = await query.range(from, to);

@@ -42,6 +42,7 @@ export default function CleanPage() {
     const [googleBookingUrl, setGoogleBookingUrl] = useState("");
     const [newDpName, setNewDpName] = useState("");
     const [newDpCategory, setNewDpCategory] = useState("");
+    const [onlyMioDottore, setOnlyMioDottore] = useState(false);
 
     useEffect(() => {
         getUniqueGoogleCategories().then(setCategories);
@@ -50,12 +51,12 @@ export default function CleanPage() {
     // Se l'utente digita una ricerca o cambia categoria, lo resettiamo a pagina 1
     useEffect(() => {
         setPage(1);
-    }, [search, selectedCategories]);
+    }, [search, selectedCategories, onlyMioDottore]);
 
     // Caricamento dati reattivo a filtri E pagina corrente
     useEffect(() => {
         startTransition(async () => {
-            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE);
+            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore);
             setRecords(response.data);
             setTotalCount(response.count);
 
@@ -64,7 +65,7 @@ export default function CleanPage() {
                 if (updated) setSelectedRecord(updated);
             }
         });
-    }, [search, selectedCategories, page]); // <-- Monitora la pagina per aggiornare i dati
+    }, [search, selectedCategories, page, onlyMioDottore]);
 
     useEffect(() => {
         if (selectedRecord) {
@@ -144,13 +145,8 @@ export default function CleanPage() {
         return null;
     };
 
-    const handleUpdateDP = async (dpId: string, currentName: string, currentCategory: string) => {
-        const newName = prompt("Modifica Nome DocPlanner:", currentName);
-        if (newName === null) return null;
-        const newCat = prompt("Modifica Categoria DocPlanner:", currentCategory);
-        if (newCat === null) return null;
-
-        const updatedRecord = await updateDPRecord(dpId, { name: newName, dp_category: newCat });
+    const handleUpdateDP = async (dpId: string, dpData: any) => {
+        const updatedRecord = await updateDPRecord(dpId, dpData);
         if (updatedRecord) {
             updateLocalRecordInTable(updatedRecord);
             alert("Record DocPlanner aggiornato!");
@@ -215,6 +211,14 @@ export default function CleanPage() {
                     selectedCategories={selectedCategories}
                     onChange={setSelectedCategories}
                 />
+
+                <Button
+                    variant={onlyMioDottore ? "default" : "outline"}
+                    className={onlyMioDottore ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-white"}
+                    onClick={() => setOnlyMioDottore((prev) => !prev)}
+                >
+                    {onlyMioDottore ? "✓ Solo MioDottore" : "Filtra per MioDottore"}
+                </Button>
 
                 {isPending && <span className="text-xs text-slate-400 self-center animate-pulse">Aggiornamento dati...</span>}
             </div>
