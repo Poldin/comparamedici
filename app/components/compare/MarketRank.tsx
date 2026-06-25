@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
-import { ExternalLink } from "lucide-react";
+import React, { useState } from "react";
 
-// Definiamo i componenti Icona interni usando il trucco del ritaglio dell'immagine
+// Componenti Icona interni
 const GoogleIcon = () => (
     <div className="w-3.5 h-3.5 shrink-0 overflow-hidden relative">
         <img
@@ -44,6 +43,8 @@ export default function MarketRankTracker({
     targetName,
     competitors,
 }: RankTrackerProps) {
+    const [showAllCompetitors, setShowAllCompetitors] = useState(false);
+
     if (!competitors || competitors.length === 0) return null;
 
     // 1. Ordiniamo i competitor dal migliore al peggiore (Reputation Score decrescente)
@@ -52,6 +53,7 @@ export default function MarketRankTracker({
     );
 
     const totalPoints = rankedCompetitors.length;
+    const maxScore = Math.max(...rankedCompetitors.map(c => c.reputation_score), 1);
 
     // 2. Troviamo la posizione dello studio target
     const targetRankIndex = rankedCompetitors.findIndex(
@@ -61,21 +63,21 @@ export default function MarketRankTracker({
     const targetRank = targetRankIndex !== -1 ? targetRankIndex + 1 : null;
     const targetRecord = targetRankIndex !== -1 ? rankedCompetitors[targetRankIndex] : null;
 
-    // Calcolo della posizione percentuale sulla linea (0% = Primo, 100% = Ultimo)
-    const linearProgress = totalPoints > 1 && targetRank
-        ? ((targetRank - 1) / (totalPoints - 1)) * 100
-        : 0;
+    // Helper interno per ottenere il prefisso/medaglia corretto in base alla posizione
+    const getRankPrefix = (index: number) => {
+        if (index === 0) return "🥇";
+        if (index === 1) return "🥈";
+        if (index === 2) return "🥉";
+        return `#${index + 1}`;
+    };
 
-    // Renderizza il blocco metriche diviso in 3 colonne perfettamente incolonnate a sinistra
+    // Renderizza il blocco metriche diviso in 3 colonne
     const renderRowStats = (comp: CompetitorBase, isTargetRow: boolean) => {
         const gReviews = comp.total_reviews || 0;
         const mdReviews = comp.miodottore_reviews || 0;
-
-        // Recuperiamo i voti medi dal database
         const gRating = comp.avg_review;
         const mdRating = comp.miodottore_avg;
 
-        // Funzione helper interna per formattare il voto con un decimale fisso (es. 5 -> "5.0")
         const formatRating = (rating: number | null | undefined) => {
             if (rating === null || rating === undefined || rating === 0) return null;
             return Number(rating).toFixed(1);
@@ -84,19 +86,15 @@ export default function MarketRankTracker({
         const formattedGIRating = formatRating(gRating);
         const formattedMdRating = formatRating(mdRating);
 
-        // Gestione colori dinamici
         const scoreColor = isTargetRow ? "text-zinc-950" : "text-white";
         const subColor = isTargetRow ? "text-zinc-700" : "text-zinc-500";
 
         return (
-            /* Larghezza impostata a w-[250px] per ospitare comodamente i decimali aggiuntivi ".0" */
             <div className="grid grid-cols-3 gap-3 sm:gap-1 sm:w-[250px] shrink-0 font-bold font-mono text-[11px] items-center self-end sm:self-auto mt-1 sm:mt-0">
-                {/* Colonna 1: Valore Sintetico */}
                 <span className={`flex items-center justify-start font-black ${scoreColor}`}>
                     🔥 {comp.reputation_score}
                 </span>
 
-                {/* Colonna 2: Recensioni Google */}
                 <span className={`flex items-center justify-start gap-1 flex-wrap ${subColor}`}>
                     <GoogleIcon />
                     <span>{gReviews}</span>
@@ -105,7 +103,6 @@ export default function MarketRankTracker({
                     )}
                 </span>
 
-                {/* Colonna 3: Recensioni MioDottore */}
                 <span className={`flex items-center justify-start gap-1 flex-wrap ${subColor}`}>
                     <MioDottoreIcon />
                     <span>{mdReviews}</span>
@@ -118,6 +115,7 @@ export default function MarketRankTracker({
     };
 
     const renderNameWithMap = (comp: CompetitorBase, prefix: string, isTargetRow: boolean) => {
+        const isPodiumPrefix = ["🥇", "🥈", "🥉"].includes(prefix);
         return (
             <span className="flex items-center flex-wrap gap-1.5 min-w-0 flex-1">
                 <span className="wrap-break-word sm:truncate">{prefix} {comp.name}</span>
@@ -138,7 +136,6 @@ export default function MarketRankTracker({
                     </a>
                 )}
 
-                {/* Pulsante MioDottore (se presente dp_link_url) */}
                 {comp.dp_link_url && (
                     <a
                         href={comp.dp_link_url}
@@ -155,71 +152,112 @@ export default function MarketRankTracker({
                         <MioDottoreIcon />
                     </a>
                 )}
-                {isTargetRow && prefix !== "🎖️" && <span className="shrink-0">👈</span>}
+                {isTargetRow && !isPodiumPrefix && prefix !== "🎖️" && <span className="shrink-0">👈</span>}
             </span>
         );
     };
 
     return (
-        <div className="space-y-5 p-4 bg-zinc-950/40 rounded-xl border border-zinc-800/80">
+        <div className="space-y-6 p-4 bg-zinc-950/40 rounded-xl border border-zinc-800/80">
 
-            {/* SEZIONE 1: TRACKER LINEARE ORIZZONTALE */}
-            <div className="space-y-2">
+            {/* SEZIONE 1: GRAFICO A COLONNE ORIZZONTALI */}
+            <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-500">
-                    <span className="text-emerald-500">🥇 1° Posto (Leader)</span>
-                    <span className="text-zinc-600">Piazzamento</span>
-                    <span className="text-rose-500">Ultimo posto 🔻</span>
+                    <span>Distanza dal Podio (Reputation Score):</span>
+                    {totalPoints > 4 && (
+                        <button
+                            onClick={() => setShowAllCompetitors(!showAllCompetitors)}
+                            className="text-zinc-400 hover:text-emerald-400 border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 rounded-md text-[9px] transition-all cursor-pointer font-bold uppercase"
+                        >
+                            {showAllCompetitors ? "Filtra Podio ⌃" : `Mostra tutti i ${totalPoints} record ▾`}
+                        </button>
+                    )}
                 </div>
+                
+                <div className="space-y-2">
+                    {rankedCompetitors.map((comp, index) => {
+                        const isTarget = comp.name.trim().toLowerCase() === targetName.trim().toLowerCase();
+                        const isPodium = index < 3;
+                        
+                        if (!showAllCompetitors && !isPodium && !isTarget) {
+                            if (index === 3 && targetRank && targetRank > 4) {
+                                return (
+                                    <div key="separator" className="text-zinc-700 text-[10px] pl-2 font-bold font-mono tracking-widest py-0.5">
+                                        •••
+                                    </div>
+                                );
+                            }
+                            return null;
+                        }
 
-                <div className="relative w-full h-2 bg-zinc-900 rounded-full flex items-center border border-zinc-800">
-                    <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 via-zinc-500/0 to-rose-500/10 rounded-full" />
-
-                    {/* Cursore dello studio target */}
-                    <div
-                        className="absolute w-4 h-4 bg-white rounded-full border-2 border-zinc-950 shadow-xl flex items-center justify-center transition-all duration-700 ease-out"
-                        style={{ left: `${linearProgress}%`, transform: 'translateX(-50%)' }}
-                    >
-                        <div className="w-1.5 h-1.5 bg-zinc-950 rounded-full"></div>
-                    </div>
+                        const barWidth = maxScore > 0 ? (comp.reputation_score / maxScore) * 100 : 0;
+                        const rankPrefix = getRankPrefix(index);
+                        
+                        return (
+                            <div key={index} className="space-y-1 animate-in fade-in duration-200">
+                                {/* Label con medaglia/numero nel nome e fiammella nello score */}
+                                <div className="flex justify-between items-center text-[11px] font-mono px-0.5">
+                                    <span className={`truncate max-w-[70%] ${isTarget ? "text-white font-black" : "text-zinc-400"}`}>
+                                        {rankPrefix} {comp.name} {isTarget && "👈"}
+                                    </span>
+                                    <span className={`font-bold flex items-center gap-1 ${isTarget ? "text-emerald-400" : "text-zinc-200"}`}>
+                                        🔥 {comp.reputation_score} pts
+                                    </span>
+                                </div>
+                                
+                                {/* Contenitore della barra */}
+                                <div className="w-full h-3 bg-zinc-900 rounded-sm overflow-hidden border border-zinc-900">
+                                    <div
+                                        className={`h-full rounded-r-xs transition-all duration-700 ease-out ${
+                                            isTarget 
+                                                ? "bg-linear-to-r from-emerald-500 to-teal-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]" 
+                                                : "bg-zinc-700"
+                                        }`}
+                                        style={{ width: `${Math.max(barWidth, 2)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
             {/* SEZIONE 2: MICRO CLASSIFICA SARTORIALE DINAMICA */}
             {targetRank && (
-                <div className="pt-1 border-t border-zinc-900/60 space-y-1.5">
+                <div className="pt-3 border-t border-zinc-900 space-y-1.5">
                     <div className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-500">
-                        Analisi distacco dal podio:
+                        Analisi dettagliata distacco:
                     </div>
 
                     <div className="space-y-1.5 text-xs font-mono">
-                        {/* Sempre il 1° Classificato */}
-                        <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 1 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
-                            {renderNameWithMap(rankedCompetitors[0], "🥇 #1", targetRank === 1)}
+                        {/* 1° Classificato */}
+                        <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 1 ? "text-zinc-950 font-black bg-white shadow-md" : "text-zinc-400"}`}>
+                            {renderNameWithMap(rankedCompetitors[0], "🥇", targetRank === 1)}
                             {renderRowStats(rankedCompetitors[0], targetRank === 1)}
                         </div>
 
-                        {/* Il 2° Classificato (se presente nel mercato) */}
+                        {/* 2° Classificato */}
                         {totalPoints > 1 && (
-                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 2 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
-                                {renderNameWithMap(rankedCompetitors[1], "🥈 #2", targetRank === 2)}
+                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 2 ? "text-zinc-950 font-black bg-white shadow-md" : "text-zinc-400"}`}>
+                                {renderNameWithMap(rankedCompetitors[1], "🥈", targetRank === 2)}
                                 {renderRowStats(rankedCompetitors[1], targetRank === 2)}
                             </div>
                         )}
 
-                        {/* Il 3° Classificato (se presente nel mercato) */}
+                        {/* 3° Classificato */}
                         {totalPoints > 2 && (
-                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 3 ? "text-white font-bold bg-zinc-800" : "text-zinc-400"}`}>
-                                {renderNameWithMap(rankedCompetitors[2], "🥉 #3", targetRank === 3)}
+                            <div className={`p-1.5 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 ${targetRank === 3 ? "text-zinc-950 font-black bg-white shadow-md" : "text-zinc-400"}`}>
+                                {renderNameWithMap(rankedCompetitors[2], "🥉", targetRank === 3)}
                                 {renderRowStats(rankedCompetitors[2], targetRank === 3)}
                             </div>
                         )}
 
-                        {/* Separatore di distacco se l'attività si trova dal 4° posto in giù */}
+                        {/* Separatore intermedi */}
                         {targetRank > 3 && (
                             <div className="text-zinc-700 text-[10px] pl-4 leading-none py-0.5 font-bold">•••</div>
                         )}
 
-                        {/* Mostra il 4° posto solo se l'utente è dal 5° in giù per non avere duplicati */}
+                        {/* 4° posto (mostrato solo se necessario per evitare duplicati) */}
                         {targetRank > 3 && targetRankIndex !== 3 && (
                             <div className="p-1.5 text-zinc-500/80 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                                 {renderNameWithMap(rankedCompetitors[3], "#4", false)}
@@ -227,12 +265,12 @@ export default function MarketRankTracker({
                             </div>
                         )}
 
-                        {/* Secondo separatore si c'è un buco tra il 3° posto e la posizione effettiva dell'utente */}
+                        {/* Secondo separatore */}
                         {targetRank > 4 && (
                             <div className="text-zinc-700 text-[10px] pl-4 leading-none py-0.5 font-bold">•••</div>
                         )}
 
-                        {/* Riga dello studio target se si trova fuori dal podio delle prime 3 posizioni */}
+                        {/* Studio target se fuori dal podio */}
                         {targetRank > 3 && targetRecord && (
                             <div className="p-1.5 bg-white text-zinc-950 font-black rounded shadow-md animate-in fade-in duration-300 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                                 {renderNameWithMap(targetRecord, `🎖️ #${targetRank}`, true)}
