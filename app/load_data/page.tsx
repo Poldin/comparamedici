@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { checkExistingPlaceIds } from './actions';
 
 interface StudioDentistico {
     id: string;
@@ -33,6 +34,8 @@ interface MappingConfig {
 export default function MappeScraperPage() {
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [existingPlaceIds, setExistingPlaceIds] = useState<string[]>([]);
+    const [isValidating, setIsValidating] = useState(false);
 
     const [config, setConfig] = useState<MappingConfig>({
         itemSelector: 'div[role="article"]',
@@ -47,6 +50,29 @@ export default function MappeScraperPage() {
     });
 
     const [records, setRecords] = useState<StudioDentistico[]>([]);
+
+    const handleHtmlParsing = async (parsedRecords: StudioDentistico[]) => {
+        if (parsedRecords.length === 0) {
+            setExistingPlaceIds([]);
+            return;
+        }
+
+        setIsValidating(true);
+        try {
+            // 1. Estrai tutti i googlePlaceId dai record appena parsati (occhio al camelCase dell'interfaccia!)
+            const parsedPlaceIds = parsedRecords.map(r => r.googlePlaceId).filter(id => id && id !== 'N/D');
+
+            // 2. Interroga il database tramite la Server Action
+            const duplicates = await checkExistingPlaceIds(parsedPlaceIds);
+
+            // 3. Salva i duplicati nello stato
+            setExistingPlaceIds(duplicates);
+        } catch (error) {
+            console.error("Errore durante il controllo dei duplicati:", error);
+        } finally {
+            setIsValidating(false);
+        }
+    };
 
     // Funzione per rigenerare la tabella al volo
     const elaboraDati = () => {
@@ -166,6 +192,7 @@ export default function MappeScraperPage() {
             });
 
             setRecords(parsedData);
+            handleHtmlParsing(parsedData);
         } catch (error) {
             console.error("Errore di mapping:", error);
         }
@@ -185,8 +212,15 @@ export default function MappeScraperPage() {
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900">🗺️ Compara Medici - inserisci dati</h1>
                         <p className="text-sm text-gray-500 mt-1">Estrazione dati rigida e dinamica da Google Maps</p>
                     </div>
-                    <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-semibold border border-blue-100">
-                        Record Rilevati: <span className="text-xl font-bold">{records.length}</span>
+                    <div className="flex gap-2">
+                        <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-semibold border border-blue-100">
+                            Record Rilevati: <span className="text-xl font-bold">{records.length}</span>
+                        </div>
+                        {existingPlaceIds.length > 0 && (
+                            <div className="bg-amber-50 text-amber-700 px-4 py-2 rounded-lg font-semibold border border-amber-100">
+                                Già in DB: <span className="text-xl font-bold">{isValidating ? '...' : existingPlaceIds.length}</span>
+                            </div>
+                        )}
                     </div>
                 </header>
 
@@ -320,9 +354,25 @@ export default function MappeScraperPage() {
                                             ? records.filter(r => r.googlePlaceId === studio.googlePlaceId).length
                                             : 1;
                                         const eDuplicato = conteggioId > 1;
+                                        const giaInDatabase = existingPlaceIds.includes(studio.googlePlaceId);
+
                                         return (
-                                            <tr key={studio.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="p-3 font-semibold text-gray-900 max-w-[200px]">{studio.nome}</td>
+                                            <tr
+                                                key={studio.id}
+                                                className={`hover:bg-gray-50 transition-colors ${giaInDatabase ? 'bg-amber-50/70 hover:bg-amber-100/50' : ''
+                                                    }`}
+                                            >
+                                                {/* === FIXATO: Il div ora è correttamente avvolto dal tag td === */}
+                                                <td className="p-3 font-semibold text-gray-900 max-w-[200px]">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span>{studio.nome}</span>
+                                                        {giaInDatabase && (
+                                                            <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded w-max mt-1">
+                                                                💾 GIÀ NEL DATABASE
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className={`p-3 font-mono text-xs transition-colors ${eDuplicato ? 'bg-red-50 text-red-700' : 'text-gray-600'}`}>
                                                     <div className="flex flex-col gap-1">
                                                         <span>{studio.googlePlaceId}</span>
