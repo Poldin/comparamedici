@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { checkExistingPlaceIds } from './actions';
+import { Trash2 } from 'lucide-react';
 
 interface StudioDentistico {
     id: string;
@@ -72,6 +73,10 @@ export default function MappeScraperPage() {
         } finally {
             setIsValidating(false);
         }
+    };
+
+    const rimuoviRecord = (idDaRimuovere: string) => {
+        setRecords(prevRecords => prevRecords.filter(r => r.id !== idDaRimuovere));
     };
 
     // Funzione per rigenerare la tabella al volo
@@ -335,6 +340,7 @@ export default function MappeScraperPage() {
                             <table className="w-full text-left text-sm text-gray-600">
                                 <thead className="bg-gray-100 text-xs text-gray-700 uppercase font-semibold">
                                     <tr>
+                                        <th className="p-3 w-[50px] text-center"></th>
                                         <th className="p-3">Nome</th>
                                         <th className="p-3">Google Place ID</th>
                                         <th className="p-3">G Categoria</th>
@@ -362,7 +368,16 @@ export default function MappeScraperPage() {
                                                 className={`hover:bg-gray-50 transition-colors ${giaInDatabase ? 'bg-amber-50/70 hover:bg-amber-100/50' : ''
                                                     }`}
                                             >
-                                                {/* === FIXATO: Il div ora è correttamente avvolto dal tag td === */}
+                                                <td className="p-3 text-center align-middle">
+                                                    <button
+                                                        onClick={() => rimuoviRecord(studio.id)}
+                                                        className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all duration-200"
+                                                        title="Rimuovi questo record dall'elenco"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                                
                                                 <td className="p-3 font-semibold text-gray-900 max-w-[200px]">
                                                     <div className="flex flex-col gap-0.5">
                                                         <span>{studio.nome}</span>

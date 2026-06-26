@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import MarketRankTracker from "./MarketRank";
 import MarketCurveChart from "./MarketCurvechart";
 import ReputationInfoDialog from "./ReputationInfoDialog";
+import CallBookingBanner from "./CallBookingBanner";
 
 
 interface Props {
@@ -332,6 +333,11 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
             competitors={competitors}
           />
         </div>
+      )}
+
+      {/* banner cta prenota demo */}
+      {targetRank && targetRecord && (
+        <CallBookingBanner />
       )}
 
       {/* Grid delle metriche macro (KPI Cards) */}
