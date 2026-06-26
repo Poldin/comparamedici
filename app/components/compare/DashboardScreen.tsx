@@ -465,7 +465,7 @@ export default function Dashboard({ lat, lng, radius, targetName }: Props) {
                           {/* Bottone Analisi Valutazione (nascondi se è lo studio dell'utente corrente) */}
                           {!isTarget && (
                             <a
-                              href={`/clinic/${item.id || encodeURIComponent(item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}?lat=${lat}&lng=${lng}&radius=${radius}&name=${encodeURIComponent(item.name)}`}
+                              href={`/clinic/${item.id || encodeURIComponent(item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex shrink-0 items-center transition-all px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs bg-zinc-950 border-zinc-900 text-zinc-200 hover:text-white hover:bg-zinc-850 active:scale-95"

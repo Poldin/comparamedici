@@ -256,3 +256,32 @@ export async function getRandomActivities() {
         return { data: [], error: error.message };
     }
 }
+
+
+/**
+ * Recupera una singola attività dal database tramite il suo ID UUID
+ * Utilizzata come fallback nella pagina della clinica se mancano le coordinate nell'URL
+ */
+export async function getClinicById(id: string) {
+    console.log("--- CHIAMATA SERVER RICEVUTA PER RECUPERO CLINICA DA ID UUID: ---", id);
+
+    if (!id) return { data: null, error: "ID non fornito" };
+
+    try {
+        const { data, error } = await supabase
+            .from("comparator_out_google")
+            .select("id, name, lat, lng")
+            .eq("id", id)
+            .maybeSingle(); // Ritorna l'oggetto singolo o null se non esiste, senza sollevare errori di array
+
+        if (error) {
+            console.error("ERRORE DI SUPABASE NEL RECUPERO CLINICA:", error.message);
+            return { data: null, error: error.message };
+        }
+
+        return { data: data, error: null };
+    } catch (error: any) {
+        console.error("ECCEZIONE CATCH RECUPERO CLINICA:", error.message);
+        return { data: null, error: error.message };
+    }
+}

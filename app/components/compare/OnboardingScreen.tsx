@@ -87,7 +87,7 @@ export default function Onboarding() {
         const clinicSlug = activity.id || encodeURIComponent(activity.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 
         // Reindirizziamo verso il nuovo path dinamico
-        router.push(`/clinic/${clinicSlug}?lat=${activity.lat}&lng=${activity.lng}&radius=15&name=${encodeURIComponent(activity.name)}`);
+        router.push(`/clinic/${clinicSlug}`);
     };
 
     const hasSearchKeyword = keyword.trim().length >= 2;
