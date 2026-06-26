@@ -30,7 +30,7 @@ export default function CallBookingBanner() {
           Migliora la reputazione online.
           </h3>
           <p className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-            Come si valorizza la la presenza online per nuovi pazienti? Prenota una call e parliamone👍
+            Come si valorizza la presenza online per cresecere con i pazienti? Prenota una call e parliamone👍
           </p>
         </div>
       </div>
