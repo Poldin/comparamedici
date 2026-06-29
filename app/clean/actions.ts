@@ -8,113 +8,124 @@ import { revalidatePath } from "next/cache";
  * Viene usato internamente per restituire lo stato fresco alla sidebar dopo ogni modifica.
  */
 async function getSingleGoogleRecord(id: string) {
-  const { data, error } = await supabase
-    .from("comparator_out_google")
-    .select(`
-      id,
-      name,
-      google_category,
-      phone,
-      website_url,
-      online_booking_url,
-      address,
-      avg_review,
-      total_reviews,
-      comparator_link_g_dp (
+    const { data, error } = await supabase
+      .from("comparator_out_google")
+      .select(`
         id,
-        dp_id,
-        other,
-        comparator_out_dp (
+        name,
+        google_category,
+        phone,
+        website_url,
+        online_booking_url,
+        address,
+        avg_review,
+        total_reviews,
+        email,
+        comparator_email_sent (
           id,
-          name,
-          dp_category,
-          tot_dc_reviews,
-          avg_grade,
-          dp_link_url
+          email_sent_tmz
+        ),
+        comparator_link_g_dp (
+          id,
+          dp_id,
+          other,
+          comparator_out_dp (
+            id,
+            name,
+            dp_category,
+            tot_dc_reviews,
+            avg_grade,
+            dp_link_url
+          )
         )
-      )
-    `)
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    console.error("Errore helper getSingleGoogleRecord:", error.message);
-    return null;
+      `)
+      .eq("id", id)
+      .single();
+  
+    if (error) {
+      console.error("Errore helper getSingleGoogleRecord:", error.message);
+      return null;
+    }
+    return data;
   }
-  return data;
-}
-
-/**
- * Recupera i record di Google filtrati per ricerca testuale e categoria con Paginazione Server-Side
- */
-export async function getGoogleRecords(
+  
+  /**
+   * Recupera i record di Google filtrati per ricerca testuale e categoria con Paginazione Server-Side
+   */
+  export async function getGoogleRecords(
     search?: string, 
     categories?: string[], 
     page: number = 1, 
     pageSize: number = 100,
     onlyMioDottore: boolean = false
-  ) {
+) {
     try {
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-  
-      let query = supabase
-        .from("comparator_out_google")
-        .select(`
-          id,
-          name,
-          google_category,
-          phone,
-          website_url,
-          online_booking_url,
-          address,
-          avg_review,
-          total_reviews,
-          comparator_link_g_dp (
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+    
+        let query = supabase
+          .from("comparator_out_google")
+          .select(`
             id,
-            dp_id,
-            other,
-            comparator_out_dp (
+            name,
+            google_category,
+            phone,
+            website_url,
+            online_booking_url,
+            address,
+            avg_review,
+            total_reviews,
+            lat,
+            lng,
+            email,
+            comparator_email_sent (
               id,
-              name,
-              dp_category,
-              tot_dc_reviews,
-              avg_grade,
-              dp_link_url
+              email_sent_tmz
+            ),
+            comparator_link_g_dp (
+              id,
+              dp_id,
+              other,
+              comparator_out_dp (
+                id,
+                name,
+                dp_category,
+                tot_dc_reviews,
+                avg_grade,
+                dp_link_url
+              )
             )
-          )
-        `, { count: 'exact' })
-        .order("created_at", { ascending: false });
+          `, { count: 'exact' })
+          .order("created_at", { ascending: false });
+    
+        if (search && search.trim() !== "") {
+          query = query.ilike("name", `%${search.trim()}%`);
+        }
+    
+        if (categories && categories.length > 0) {
+          query = query.in("google_category", categories);
+        }
   
-      if (search && search.trim() !== "") {
-        query = query.ilike("name", `%${search.trim()}%`);
-      }
-  
-      if (categories && categories.length > 0) {
-        query = query.in("google_category", categories);
-      }
-
-      if (onlyMioDottore) {
-        // Filtra i record che contengono 'miodottore' o 'docplanner' (case-insensitive)
-        query = query.or("online_booking_url.ilike.%miodottore%,online_booking_url.ilike.%docplanner%");
-      }
-  
-      const { data, error, count } = await query.range(from, to);
-  
-      if (error) {
-        console.error("Errore fetch Google Records:", error.message);
-        return { data: [], count: 0 };
-      }
-  
-      return {
-        data: data || [],
-        count: count || 0
-      };
+        if (onlyMioDottore) {
+          query = query.or("online_booking_url.ilike.%miodottore%,online_booking_url.ilike.%docplanner%");
+        }
+    
+        const { data, error, count } = await query.range(from, to);
+    
+        if (error) {
+          console.error("Errore fetch Google Records:", error.message);
+          return { data: [], count: 0 };
+        }
+    
+        return {
+          data: data || [],
+          count: count || 0
+        };
     } catch (error: any) {
-      console.error("Eccezione fetch Google Records:", error.message);
-      return { data: [], count: 0 };
+        console.error("Eccezione fetch Google Records:", error.message);
+        return { data: [], count: 0 };
     }
-  }
+}
 
 /**
  * Aggiorna un record esistente sulla tabella Google e ritorna l'oggetto aggiornato

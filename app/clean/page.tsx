@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { Send } from "lucide-react";
+import { SideMailPanel } from "../components/clean/SideMailPanel";
 import {
     getGoogleRecords,
     updateGoogleRecord,
@@ -43,6 +45,9 @@ export default function CleanPage() {
     const [newDpName, setNewDpName] = useState("");
     const [newDpCategory, setNewDpCategory] = useState("");
     const [onlyMioDottore, setOnlyMioDottore] = useState(false);
+    const [isMailOpen, setIsMailOpen] = useState(false);
+    const [mailTargetEmail, setMailTargetEmail] = useState("");
+    const [mailTargetRecord, setMailTargetRecord] = useState<any | null>(null);
 
     useEffect(() => {
         getUniqueGoogleCategories().then(setCategories);
@@ -94,6 +99,50 @@ export default function CleanPage() {
         }
     };
 
+    const renderEmailStatus = (record: any) => {
+        if (!record.email) {
+            return <Badge variant="secondary" className="text-slate-400 bg-slate-100">Nessuna Email</Badge>;
+        }
+
+        const emailSentList = record.comparator_email_sent || [];
+        const isSent = emailSentList.length > 0;
+
+        return (
+            <div className="flex items-center justify-between gap-2 max-w-[240px] group/email">
+                <div className="flex flex-col items-start gap-1 truncate w-full">
+                    <span className="text-sm font-medium text-slate-700 truncate w-full" title={record.email}>
+                        {record.email}
+                    </span>
+                    {isSent ? (
+                        <Badge className="bg-blue-600 text-white font-medium text-[10px] h-5">
+                            ✓ Inviata il {new Date(emailSentList[0].email_sent_tmz).toLocaleDateString()}
+                        </Badge>
+                    ) : (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5">
+                            Da Inviare
+                        </Badge>
+                    )}
+                </div>
+
+                {/* CTA di invio mail: ora visibile sempre se il campo email esiste */}
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 opacity-80 group-hover/email:opacity-100 transition-all"
+                    title="Apri pannello invio mail"
+                    onClick={(e) => {
+                        e.stopPropagation(); // Evita di aprire la ReconciliationSheet della riga
+                        setMailTargetEmail(record.email);
+                        setMailTargetRecord(record);
+                        setIsMailOpen(true);
+                    }}
+                >
+                    <Send className="w-3.5 h-3.5" />
+                </Button>
+            </div>
+        );
+    };
+
     // Helper interno per aggiornare al volo un singolo record nella lista della tabella
     const updateLocalRecordInTable = (updatedRecord: any) => {
         setRecords((prev) => prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)));
@@ -120,17 +169,23 @@ export default function CleanPage() {
         }
     };
 
-    const handleSaveGoogle = async () => {
-        if (!selectedRecord) return null;
-        const updatedRecord = await updateGoogleRecord(selectedRecord.id, {
-            name: googleName,
-            phone: googlePhone,
-            online_booking_url: googleBookingUrl,
+    const handleSaveGoogle = async (
+        id: string,
+        data: { name: string; phone: string; online_booking_url: string }
+    ) => {
+        if (!id) return null;
+
+        // Inviamo alla Server Action i dati freschi che arrivano dal pannello
+        const updatedRecord = await updateGoogleRecord(id, {
+            name: data.name,
+            phone: data.phone,
+            online_booking_url: data.online_booking_url,
             updated_at: new Date().toISOString()
         });
+
         if (updatedRecord) {
             updateLocalRecordInTable(updatedRecord);
-            alert("Record Google salvato!");
+            alert("Record Google salvato con successo!");
             return updatedRecord;
         }
         return null;
@@ -246,6 +301,7 @@ export default function CleanPage() {
                             <TableHead>Categoria Google</TableHead>
                             <TableHead>Telefono</TableHead>
                             <TableHead>Prenotazione Online</TableHead>
+                            <TableHead>Contatto & Email</TableHead>
                             <TableHead>Collegamenti MioDottore</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -274,6 +330,9 @@ export default function CleanPage() {
                                     <TableCell><Badge variant="outline">{record.google_category || "N/A"}</Badge></TableCell>
                                     <TableCell className="text-sm text-slate-600">{record.phone || "-"}</TableCell>
                                     <TableCell>{renderBookingBadge(record.online_booking_url)}</TableCell>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        {renderEmailStatus(record)}
+                                    </TableCell>
                                     <TableCell>
                                         {links.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
@@ -311,6 +370,41 @@ export default function CleanPage() {
                 onCreateDP={handleCreateDP}
                 onUpdateDP={handleUpdateDP}
                 onRemoveLink={handleRemoveLink}
+            />
+
+            <SideMailPanel
+                isOpen={isMailOpen}
+                onOpenChange={setIsMailOpen}
+                recipientEmail={mailTargetEmail}
+                recordData={mailTargetRecord}
+                onLogMailSent={async (recordId, templateType) => {
+                    try {
+                        // Qui eseguiamo l'inserimento nella tabella public.comparator_email_sent tramite Supabase
+                        const { supabase } = await import("@/app/lib/supabaseClient");
+
+                        const { error } = await supabase
+                            .from("comparator_email_sent")
+                            .insert([
+                                {
+                                    comparator_g_id: recordId,
+                                    email_sent_tmz: new Date().toISOString(),
+                                    metadata: { template: templateType }
+                                }
+                            ]);
+
+                        if (error) throw error;
+
+                        // Ricarica i record locali per mostrare subito il badge blu "Inviata" aggiornato in tabella
+                        const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore);
+                        setRecords(response.data);
+
+                        return true;
+                    } catch (err) {
+                        console.error("Errore tracciamento mail:", err);
+                        alert("Errore durante il salvataggio del tracciamento sul DB");
+                        return false;
+                    }
+                }}
             />
         </div>
     );

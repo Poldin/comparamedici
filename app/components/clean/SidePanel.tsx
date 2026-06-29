@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Globe, MapPin, Phone, Star, MessageSquare, Trash2, Plus, ExternalLink } from "lucide-react";
+import { Bookmark, Globe, MapPin, Phone, Star, MessageSquare, Trash2, Plus, ExternalLink, Mail } from "lucide-react";
 
 interface ReconciliationSheetProps {
     isOpen: boolean;
@@ -13,8 +13,7 @@ interface ReconciliationSheetProps {
     onDeleteActivity: () => Promise<void>;
     onSaveGoogle: (id: string, data: any) => Promise<any>;
     onCreateDP: (googleId: string, dpData: any) => Promise<any>;
-    // Aggiornato per accettare l'intero oggetto dei dati modificati
-    onUpdateDP: (dpId: string, dpData: any) => Promise<any>; 
+    onUpdateDP: (dpId: string, dpData: any) => Promise<any>;
     onRemoveLink: (linkId: string, googleId: string) => Promise<any>;
 }
 
@@ -40,15 +39,16 @@ export function ReconciliationSheet({
     const [googleAddress, setGoogleAddress] = useState("");
     const [googleAvgReview, setGoogleAvgReview] = useState("");
     const [googleTotalReviews, setGoogleTotalReviews] = useState("");
+    const [googleEmail, setGoogleEmail] = useState("");
 
-    // Stati per la creazione rapida del nuovo record MioDottore (DP) + Dati Analitici richiesti
+    // Stati per la creazione rapida del nuovo record MioDottore (DP)
     const [newDpName, setNewDpName] = useState("");
     const [newDpCategory, setNewDpCategory] = useState("");
     const [newDpTotalReviews, setNewDpTotalReviews] = useState("");
     const [newDpAvgGrade, setNewDpAvgGrade] = useState("");
     const [newDpLinkUrl, setNewDpLinkUrl] = useState("");
     const [isAddingNew, setIsAddingNew] = useState(false);
-    
+
     // Stati per la MODIFICA di un record MioDottore esistente
     const [editingDpId, setEditingDpId] = useState<string | null>(null);
     const [editDpName, setEditDpName] = useState("");
@@ -68,6 +68,7 @@ export function ReconciliationSheet({
             setGoogleAddress(selectedRecord.address || "");
             setGoogleAvgReview(selectedRecord.avg_review?.toString() || "");
             setGoogleTotalReviews(selectedRecord.total_reviews?.toString() || "");
+            setGoogleEmail(selectedRecord.email || "");
 
             // Reset stati inserimento DP
             setNewDpName("");
@@ -76,7 +77,14 @@ export function ReconciliationSheet({
             setNewDpAvgGrade("");
             setNewDpLinkUrl("");
             setIsAddingNew(false);
+            
+            // Reset stati modifica DP
             setEditingDpId(null);
+            setEditDpName("");
+            setEditDpCategory("");
+            setEditDpAvgGrade("");
+            setEditDpTotalReviews("");
+            setEditDpLinkUrl("");
         }
     }, [selectedRecord]);
 
@@ -92,6 +100,7 @@ export function ReconciliationSheet({
             address: googleAddress,
             avg_review: googleAvgReview ? parseFloat(googleAvgReview) : null,
             total_reviews: googleTotalReviews ? parseInt(googleTotalReviews, 10) : null,
+            email: googleEmail.trim() || null,
         });
         if (updated) setCurrentRecord(updated);
     };
@@ -126,10 +135,16 @@ export function ReconciliationSheet({
             tot_dc_reviews: editDpTotalReviews ? parseInt(editDpTotalReviews, 10) : null,
             dp_link_url: editDpLinkUrl || null
         });
-    
+
         if (updatedRecord) {
             setCurrentRecord(updatedRecord);
-            setEditingDpId(null); // Esce dalla modalità modifica
+            // Esce dalla modalità modifica e pulisce i campi
+            setEditingDpId(null); 
+            setEditDpName("");
+            setEditDpCategory("");
+            setEditDpAvgGrade("");
+            setEditDpTotalReviews("");
+            setEditDpLinkUrl("");
         }
     };
 
@@ -200,6 +215,20 @@ export function ReconciliationSheet({
                             <div>
                                 <label className="text-xs font-semibold text-slate-600 mb-1 block">Prenotazione Online</label>
                                 <Input value={googleBookingUrl} onChange={(e) => setGoogleBookingUrl(e.target.value)} className="bg-slate-50/50 focus-visible:bg-white" placeholder="https://www.miodottore.it/..." />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-semibold text-slate-600 mb-1 block">Indirizzo Email</label>
+                                <div className="relative">
+                                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                                    <Input
+                                        type="email"
+                                        value={googleEmail}
+                                        onChange={(e) => setGoogleEmail(e.target.value)}
+                                        className="pl-9 bg-slate-50/50 focus-visible:bg-white"
+                                        placeholder="esempio@struttura.it"
+                                    />
+                                </div>
                             </div>
                         </div>
 
