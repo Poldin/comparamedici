@@ -43,7 +43,7 @@ export default function MappeScraperPage() {
         nomeSelector: '.qBF1Pd',
         categoriaSelector: '.W4Efsd',
         telefonoSelector: '.UsdlK',
-        sitoSelector: 'a[data-value="Sito web"]',
+        sitoSelector: 'a[data-value="Sito web"], a[aria-label*="Sito"], a[aria-label*="sito"], a[aria-label*="site"], a[aria-label*="website"], a[aria-label*="web site"], a[aria-label*="Web Site"], a[aria-label*="Web site"]',
         indirizzoSelector: '.W4Efsd',
         ratingSelector: '.MW4etd',
         recensioniSelector: '.UY7F9',
@@ -180,19 +180,18 @@ export default function MappeScraperPage() {
                 });
 
                 // 5. Estrazione Link Prenotazione
+                // 5. Estrazione Link Prenotazione (Aggiornato per il nuovo HTML)
                 const prenotazioneEl = item.querySelector(config.prenotazioneSelector);
                 let linkPrenotazione = 'N/D';
                 let haPrenotazione = false;
 
                 if (prenotazioneEl) {
-                    // L'href potrebbe essere sul contenitore stesso o su un tag <a> figlio
-                    const href = prenotazioneEl.getAttribute('href') || prenotazioneEl.querySelector('a')?.getAttribute('href');
+                    // Se l'elemento stesso è un link <a>, prendi il suo href, altrimenti cercalo dentro
+                    const href = prenotazioneEl.tagName.toLowerCase() === 'a'
+                        ? prenotazioneEl.getAttribute('href')
+                        : prenotazioneEl.querySelector('a')?.getAttribute('href');
 
-                    // Controlliamo il testo ovunque nel nodo, ignorando maiuscole/minuscole
-                    const textContext = prenotazioneEl.textContent?.toLowerCase() || '';
-
-                    // Allarghiamo la maglia: non solo "prenota", ma anche "appuntament" o "agenda"
-                    if (href && (textContext.includes('prenota') || textContext.includes('appuntament'))) {
+                    if (href) {
                         linkPrenotazione = href;
                         haPrenotazione = true;
                     }
@@ -389,107 +388,107 @@ export default function MappeScraperPage() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {records
-                                    .filter(studio => {
-                                        if (nascondiSalvati) {
-                                            return !existingPlaceIds.includes(studio.googlePlaceId);
-                                        }
-                                        return true;
-                                    })
-                                    
-                                    .map((studio) => {
-                                        const conteggioId = studio.googlePlaceId !== 'N/D'
-                                            ? records.filter(r => r.googlePlaceId === studio.googlePlaceId).length
-                                            : 1;
-                                        const eDuplicato = conteggioId > 1;
-                                        const giaInDatabase = existingPlaceIds.includes(studio.googlePlaceId);
+                                        .filter(studio => {
+                                            if (nascondiSalvati) {
+                                                return !existingPlaceIds.includes(studio.googlePlaceId);
+                                            }
+                                            return true;
+                                        })
 
-                                        return (
-                                            <tr
-                                                key={studio.id}
-                                                className={`hover:bg-gray-50 transition-colors ${giaInDatabase ? 'bg-amber-50/70 hover:bg-amber-100/50' : ''
-                                                    }`}
-                                            >
-                                                <td className="p-3 text-center align-middle">
-                                                    <button
-                                                        onClick={() => rimuoviRecord(studio.id)}
-                                                        className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all duration-200"
-                                                        title="Rimuovi questo record dall'elenco"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </td>
+                                        .map((studio) => {
+                                            const conteggioId = studio.googlePlaceId !== 'N/D'
+                                                ? records.filter(r => r.googlePlaceId === studio.googlePlaceId).length
+                                                : 1;
+                                            const eDuplicato = conteggioId > 1;
+                                            const giaInDatabase = existingPlaceIds.includes(studio.googlePlaceId);
 
-                                                <td className="p-3 font-semibold text-gray-900 max-w-[200px]">
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span>{studio.nome}</span>
-                                                        {giaInDatabase && (
-                                                            <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded w-max mt-1">
-                                                                💾 GIÀ NEL DATABASE
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className={`p-3 font-mono text-xs transition-colors ${eDuplicato ? 'bg-red-50 text-red-700' : 'text-gray-600'}`}>
-                                                    <div className="flex flex-col gap-1">
-                                                        <span>{studio.googlePlaceId}</span>
-                                                        {eDuplicato && (
-                                                            <span className="text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded font-bold w-max">
-                                                                ⚠️ DUPLICATO ({conteggioId} volte)
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-0.5 rounded border border-gray-200">
-                                                        {studio.categoria}
-                                                    </span>
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    {studio.mapsUrl !== 'N/D' ? (
-                                                        <a
-                                                            href={studio.mapsUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="text-red-500 hover:text-red-700 transition text-lg"
-                                                            title="Apri in Google Maps"
+                                            return (
+                                                <tr
+                                                    key={studio.id}
+                                                    className={`hover:bg-gray-50 transition-colors ${giaInDatabase ? 'bg-amber-50/70 hover:bg-amber-100/50' : ''
+                                                        }`}
+                                                >
+                                                    <td className="p-3 text-center align-middle">
+                                                        <button
+                                                            onClick={() => rimuoviRecord(studio.id)}
+                                                            className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all duration-200"
+                                                            title="Rimuovi questo record dall'elenco"
                                                         >
-                                                            📍
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">N/D</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 font-mono text-xs text-blue-600">{studio.telefono}</td>
-                                                <td className="p-3 max-w-[180px] truncate">
-                                                    {studio.sitoWeb !== 'N/D' ? (
-                                                        <a href={studio.sitoWeb} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">{studio.sitoWeb}</a>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">N/D</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    {studio.haPrenotazione ? (
-                                                        <a
-                                                            href={studio.linkPrenotazione}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full hover:bg-green-200 transition"
-                                                        >
-                                                            📅 Sì (Vedi Link)
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">❌ No</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 text-xs max-w-[200px] truncate">{studio.indirizzo}</td>
-                                                <td className="p-3 text-center font-bold text-yellow-600">{studio.rating} ⭐</td>
-                                                <td className="p-3 text-center font-medium">{studio.recensioni}</td>
-                                                <td className="p-3 text-xs font-mono text-gray-500">
-                                                    {studio.coordinate.lat}, {studio.coordinate.lng}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+
+                                                    <td className="p-3 font-semibold text-gray-900 max-w-[200px]">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span>{studio.nome}</span>
+                                                            {giaInDatabase && (
+                                                                <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded w-max mt-1">
+                                                                    💾 GIÀ NEL DATABASE
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className={`p-3 font-mono text-xs transition-colors ${eDuplicato ? 'bg-red-50 text-red-700' : 'text-gray-600'}`}>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span>{studio.googlePlaceId}</span>
+                                                            {eDuplicato && (
+                                                                <span className="text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded font-bold w-max">
+                                                                    ⚠️ DUPLICATO ({conteggioId} volte)
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-0.5 rounded border border-gray-200">
+                                                            {studio.categoria}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 text-center">
+                                                        {studio.mapsUrl !== 'N/D' ? (
+                                                            <a
+                                                                href={studio.mapsUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="text-red-500 hover:text-red-700 transition text-lg"
+                                                                title="Apri in Google Maps"
+                                                            >
+                                                                📍
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-xs">N/D</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3 font-mono text-xs text-blue-600">{studio.telefono}</td>
+                                                    <td className="p-3 max-w-[180px] truncate">
+                                                        {studio.sitoWeb !== 'N/D' ? (
+                                                            <a href={studio.sitoWeb} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">{studio.sitoWeb}</a>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-xs">N/D</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3 text-center">
+                                                        {studio.haPrenotazione ? (
+                                                            <a
+                                                                href={studio.linkPrenotazione}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full hover:bg-green-200 transition"
+                                                            >
+                                                                📅 Sì (Vedi Link)
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-xs">❌ No</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3 text-xs max-w-[200px] truncate">{studio.indirizzo}</td>
+                                                    <td className="p-3 text-center font-bold text-yellow-600">{studio.rating} ⭐</td>
+                                                    <td className="p-3 text-center font-medium">{studio.recensioni}</td>
+                                                    <td className="p-3 text-xs font-mono text-gray-500">
+                                                        {studio.coordinate.lat}, {studio.coordinate.lng}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
                                 </tbody>
                             </table>
                         </div>
