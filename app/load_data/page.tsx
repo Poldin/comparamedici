@@ -51,6 +51,18 @@ export default function MappeScraperPage() {
     });
 
     const [records, setRecords] = useState<StudioDentistico[]>([]);
+    const [nascondiSalvati, setNascondiSalvati] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('filtro_nascondi_salvati');
+            return saved === 'true';
+        }
+        return false;
+    });
+
+    // Effetto per salvare la preferenza quando cambia
+    useEffect(() => {
+        localStorage.setItem('filtro_nascondi_salvati', String(nascondiSalvati));
+    }, [nascondiSalvati]);
 
     const handleHtmlParsing = async (parsedRecords: StudioDentistico[]) => {
         if (parsedRecords.length === 0) {
@@ -99,10 +111,12 @@ export default function MappeScraperPage() {
 
                 // 2. Estrazione Info di Contatto e Recensioni
                 const telefono = item.querySelector(config.telefonoSelector)?.textContent?.trim() || 'N/D';
-                const sitoEl = item.querySelector(config.sitoSelector);
+                let sitoEl = item.querySelector(config.sitoSelector)
+                    || item.querySelector('a[aria-label*="Sito web"]')
+                    || item.querySelector('a[aria-label*="Visita il sito"]');
                 const sitoWeb = sitoEl?.getAttribute('href') || 'N/D';
+
                 const ratingRaw = item.querySelector(config.ratingSelector)?.textContent?.trim() || 'N/D';
-                // Sostituisce la virgola italiana con il punto decimale (es. "4,7" -> "4.7")
                 const rating = ratingRaw !== 'N/D' ? ratingRaw.replace(',', '.') : 'N/D';
                 const recensioniRaw = item.querySelector(config.recensioniSelector)?.textContent?.trim() || '';
                 const recensioni = recensioniRaw.replace(/[()]/g, '') || '0';
@@ -171,8 +185,14 @@ export default function MappeScraperPage() {
                 let haPrenotazione = false;
 
                 if (prenotazioneEl) {
-                    const href = prenotazioneEl.getAttribute('href');
-                    if (href && prenotazioneEl.textContent?.toLowerCase().includes('prenota')) {
+                    // L'href potrebbe essere sul contenitore stesso o su un tag <a> figlio
+                    const href = prenotazioneEl.getAttribute('href') || prenotazioneEl.querySelector('a')?.getAttribute('href');
+
+                    // Controlliamo il testo ovunque nel nodo, ignorando maiuscole/minuscole
+                    const textContext = prenotazioneEl.textContent?.toLowerCase() || '';
+
+                    // Allarghiamo la maglia: non solo "prenota", ma anche "appuntament" o "agenda"
+                    if (href && (textContext.includes('prenota') || textContext.includes('appuntament'))) {
                         linkPrenotazione = href;
                         haPrenotazione = true;
                     }
@@ -340,8 +360,21 @@ export default function MappeScraperPage() {
                             <table className="w-full text-left text-sm text-gray-600">
                                 <thead className="bg-gray-100 text-xs text-gray-700 uppercase font-semibold">
                                     <tr>
-                                        <th className="p-3 w-[50px] text-center"></th>
-                                        <th className="p-3">Nome</th>
+                                        <th className="p-3 w-[50px] text-center align-middle">
+                                            <input
+                                                type="checkbox"
+                                                id="toggle-salvati"
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                checked={nascondiSalvati}
+                                                onChange={(e) => setNascondiSalvati(e.target.checked)}
+                                                title="Nascondi record già presenti nel DB"
+                                            />
+                                        </th>
+                                        <th className="p-3">
+                                            <label htmlFor="toggle-salvati" className="cursor-pointer select-none">
+                                                Nome {nascondiSalvati && <span className="text-[10px] text-amber-600 font-normal border border-amber-300 bg-amber-50 px-1 rounded ml-1">Filtro Attivo</span>}
+                                            </label>
+                                        </th>
                                         <th className="p-3">Google Place ID</th>
                                         <th className="p-3">G Categoria</th>
                                         <th className="p-3 text-center">G maps</th>
@@ -355,7 +388,15 @@ export default function MappeScraperPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {records.map((studio) => {
+                                    {records
+                                    .filter(studio => {
+                                        if (nascondiSalvati) {
+                                            return !existingPlaceIds.includes(studio.googlePlaceId);
+                                        }
+                                        return true;
+                                    })
+                                    
+                                    .map((studio) => {
                                         const conteggioId = studio.googlePlaceId !== 'N/D'
                                             ? records.filter(r => r.googlePlaceId === studio.googlePlaceId).length
                                             : 1;
@@ -377,7 +418,7 @@ export default function MappeScraperPage() {
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </td>
-                                                
+
                                                 <td className="p-3 font-semibold text-gray-900 max-w-[200px]">
                                                     <div className="flex flex-col gap-0.5">
                                                         <span>{studio.nome}</span>
