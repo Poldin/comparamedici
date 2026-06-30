@@ -5,8 +5,7 @@ import { checkEmailsBeforeImport, importEmailsFromJson, CheckedRecord, ImportRes
 
 // Estendiamo l'interfaccia localmente per includere l'indirizzo del DB se l'azione lo passa
 interface ExtendedCheckedRecord extends CheckedRecord {
-    indirizzo_db?: string | null;
-    indirizzo_json?: string; // se l'azione non lo passa, lo recuperiamo dal ciclo o lo estendiamo
+    indirizzo_json?: string; 
 }
 
 export default function ImportEmailPage() {

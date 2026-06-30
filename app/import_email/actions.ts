@@ -19,6 +19,7 @@ export interface CheckedRecord {
     score: number; // Mostrerà sempre il punteggio massimo calcolato!
     status: "disponibile" | "gia_presente" | "non_trovato";
     db_id?: string;
+    indirizzo_db?: string;
 }
 
 export interface ImportResult {
@@ -148,7 +149,8 @@ export async function checkEmailsBeforeImport(jsonData: EmailImportInput[]): Pro
                 match_type: matchType,
                 score: bestScore,
                 status,
-                db_id: bestMatch ? bestMatch.id : undefined
+                db_id: bestMatch ? bestMatch.id : undefined,
+                indirizzo_db: bestMatch ? bestMatch.address : null
             };
         });
 
