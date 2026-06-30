@@ -88,7 +88,7 @@ export function SideMailPanel({
             setBody(
                 `Gentilissimi,
 abbiamo analizzato la reputazione online di studi e cliniche dentistiche nel raggio di 15km dal vostro centro.
-Dai dati online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} centri dentistici totali rilevati nella vostra area.
+Dai dati online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} centri dentistici totali rilevati.
 
 
 <b>Trovate l'analisi completa e verificabile a questo link:</b>
