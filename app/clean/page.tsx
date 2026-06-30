@@ -38,6 +38,7 @@ export default function CleanPage() {
     const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [onlyWithEmail, setOnlyWithEmail] = useState(false);
 
     const [googleName, setGoogleName] = useState("");
     const [googlePhone, setGooglePhone] = useState("");
@@ -53,15 +54,17 @@ export default function CleanPage() {
         getUniqueGoogleCategories().then(setCategories);
     }, []);
 
+
+
     // Se l'utente digita una ricerca o cambia categoria, lo resettiamo a pagina 1
     useEffect(() => {
         setPage(1);
-    }, [search, selectedCategories, onlyMioDottore]);
+    }, [search, selectedCategories, onlyMioDottore, onlyWithEmail]);
 
     // Caricamento dati reattivo a filtri E pagina corrente
     useEffect(() => {
         startTransition(async () => {
-            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore);
+            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore, onlyWithEmail);
             setRecords(response.data);
             setTotalCount(response.count);
 
@@ -70,7 +73,7 @@ export default function CleanPage() {
                 if (updated) setSelectedRecord(updated);
             }
         });
-    }, [search, selectedCategories, page, onlyMioDottore]);
+    }, [search, selectedCategories, page, onlyMioDottore, onlyWithEmail]);
 
     useEffect(() => {
         if (selectedRecord) {
@@ -273,6 +276,14 @@ export default function CleanPage() {
                     onClick={() => setOnlyMioDottore((prev) => !prev)}
                 >
                     {onlyMioDottore ? "✓ Solo MioDottore" : "Filtra per MioDottore"}
+                </Button>
+
+                <Button
+                    variant={onlyWithEmail ? "default" : "outline"}
+                    className={onlyWithEmail ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white"}
+                    onClick={() => setOnlyWithEmail((prev) => !prev)}
+                >
+                    {onlyWithEmail ? "✓ Solo con Email" : "Filtra per Email"}
                 </Button>
 
                 {isPending && <span className="text-xs text-slate-400 self-center animate-pulse">Aggiornamento dati...</span>}
