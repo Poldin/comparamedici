@@ -64,8 +64,8 @@ abbiamo analizzato la reputazione online di studi e cliniche dentistiche nel rag
 Dai dati online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} centri dentistici totali rilevati nella vostra area.
 
 
-Trovate l'analisi completa e verificabile a questo link: 
-👉 ${linkAnalisi}
+<b>Trovate l'analisi completa e verificabile a questo link:</b>
+👉 <a href="${linkAnalisi}" target="_blank">${linkAnalisi}</a>
 (modificate il raggio di 15km per vedere come vi posizionate rispetto a concorrenti più vicini o lontani)
 
 
