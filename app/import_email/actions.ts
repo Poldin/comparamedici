@@ -36,9 +36,9 @@ function normalizeString(str: string): string {
     return str
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") 
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "") 
-        .replace(/\s+/g, " ") 
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+        .replace(/\s+/g, " ")
         .trim();
 }
 
@@ -59,7 +59,7 @@ function getSimilarityScore(str1: string, str2: string): number {
 
     const b1 = getBigrams(s1);
     const b2 = getBigrams(s2);
-    
+
     let intersection = 0;
     b1.forEach(bigram => {
         if (b2.has(bigram)) intersection++;
@@ -98,14 +98,14 @@ export async function checkEmailsBeforeImport(jsonData: EmailImportInput[]): Pro
                 const placeIdDirect = dbRec.google_place_id;
 
                 if (
-                    (placeIdFromLink && placeIdFromLink === item.google_maps_id) || 
+                    (placeIdFromLink && placeIdFromLink === item.google_maps_id) ||
                     (placeIdDirect && placeIdDirect === item.google_maps_id)
                 ) {
                     bestMatch = dbRec;
                     matchType = "id_link";
                     bestScore = 100;
                     foundExactId = true;
-                    break; 
+                    break;
                 }
             }
 
@@ -127,15 +127,18 @@ export async function checkEmailsBeforeImport(jsonData: EmailImportInput[]): Pro
                 }
             }
 
-            // 3. Determina lo stato finale in base alla soglia dell'85%
+            // 3. Determina lo stato finale (L'email a DB ha sempre la priorità assoluta)
             let status: CheckedRecord["status"] = "non_trovato";
-            
+
             if (bestMatch) {
-                // Se è un match ID (100%) o se il fuzzy ha superato l'85%, allora il record è valido
-                if (foundExactId || bestScore >= 85) {
-                    status = (bestMatch.email && bestMatch.email.trim() !== "") ? "gia_presente" : "disponibile";
+                if (bestMatch.email && bestMatch.email.trim() !== "") {
+                    // Se il record ha GIÀ un'email a DB, lo stato è "gia_presente" a prescindere dal punteggio fuzzy
+                    status = "gia_presente";
+                } else if (foundExactId || bestScore >= 85) {
+                    // Se non ha l'email ed è un match ID valido o supera la soglia fuzzy
+                    status = "disponibile";
                 } else {
-                    // Ha runnato il fuzzy ma il punteggio è sotto l'85%
+                    // Se non ha l'email ma il fuzzy è insufficiente (qui comparirà il tasto "Accetta")
                     status = "non_trovato";
                 }
             }
@@ -171,8 +174,8 @@ export async function importEmailsFromJson(jsonData: EmailImportInput[]): Promis
         const targetUpdates = checkRes.data.filter(r => r.status === "disponibile" && r.db_id && r.email_json);
         if (targetUpdates.length === 0) return { success: true, processed: jsonData.length, updated: 0, skipped: jsonData.length, error: null };
 
-        const updatePromises = targetUpdates.map(record => 
-            supabase.from("comparator_out_google").update({ 
+        const updatePromises = targetUpdates.map(record =>
+            supabase.from("comparator_out_google").update({
                 email: record.email_json.trim().toLowerCase(),
                 updated_at: new Date().toISOString()
             }).eq("id", record.db_id!)
