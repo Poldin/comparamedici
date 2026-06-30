@@ -165,14 +165,14 @@ export async function checkEmailsBeforeImport(jsonData: EmailImportInput[]): Pro
 }
 
 // (La funzione importEmailsFromJson rimane identica alla precedente)
-export async function importEmailsFromJson(jsonData: EmailImportInput[]): Promise<ImportResult> {
-    if (!jsonData || jsonData.length === 0) return { success: true, processed: 0, updated: 0, skipped: 0, error: null };
+export async function importEmailsFromJson(checkedData: CheckedRecord[]): Promise<ImportResult> {
+    if (!checkedData || checkedData.length === 0) return { success: true, processed: 0, updated: 0, skipped: 0, error: null };
     try {
-        const checkRes = await checkEmailsBeforeImport(jsonData);
-        if (checkRes.error) throw new Error(checkRes.error);
+        // Rimuoviamo il checkRes = await checkEmailsBeforeImport(...) poiché i dati sono già pronti
 
-        const targetUpdates = checkRes.data.filter(r => r.status === "disponibile" && r.db_id && r.email_json);
-        if (targetUpdates.length === 0) return { success: true, processed: jsonData.length, updated: 0, skipped: jsonData.length, error: null };
+        // Filtriamo direttamente i record che il client ci ha inviato come "disponibili"
+        const targetUpdates = checkedData.filter(r => r.status === "disponibile" && r.db_id && r.email_json);
+        if (targetUpdates.length === 0) return { success: true, processed: checkedData.length, updated: 0, skipped: checkedData.length, error: null };
 
         const updatePromises = targetUpdates.map(record =>
             supabase.from("comparator_out_google").update({
@@ -184,7 +184,7 @@ export async function importEmailsFromJson(jsonData: EmailImportInput[]): Promis
         const results = await Promise.all(updatePromises);
         if (results.find(r => r.error)) throw new Error("Errore durante l'aggiornamento massivo.");
 
-        return { success: true, processed: jsonData.length, updated: targetUpdates.length, skipped: jsonData.length - targetUpdates.length, error: null };
+        return { success: true, processed: checkedData.length, updated: targetUpdates.length, skipped: checkedData.length - targetUpdates.length, error: null };
     } catch (error: any) {
         return { success: false, processed: 0, updated: 0, skipped: 0, error: error.message };
     }

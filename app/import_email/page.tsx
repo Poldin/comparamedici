@@ -5,7 +5,7 @@ import { checkEmailsBeforeImport, importEmailsFromJson, CheckedRecord, ImportRes
 
 // Estendiamo l'interfaccia localmente per includere l'indirizzo del DB se l'azione lo passa
 interface ExtendedCheckedRecord extends CheckedRecord {
-    indirizzo_json?: string; 
+    indirizzo_json?: string;
 }
 
 export default function ImportEmailPage() {
@@ -61,28 +61,25 @@ export default function ImportEmailPage() {
     };
 
     // FASE 2: Conferma scrittura (Invia il JSON modificato o si basa sui record approvati)
+    // FASE 2: Conferma scrittura (Invia i record approvati a schermo)
     const handleConfirmImport = async () => {
         setLoading(true);
         setUiError(null);
 
         try {
-            // Per supportare le approvazioni manuali fatte a schermo, ricostruiamo l'input 
-            // filtrando solo gli elementi che l'utente ha validato (o l'algoritmo ha dato disponibili)
-            const parsedJson = JSON.parse(jsonInput);
-            
-            // Filtriamo il JSON originale mantenendo solo quelli che nella preview risultano "disponibili"
-            const validJsonInputs = parsedJson.filter((_: any, idx: number) => {
-                return previewData[idx]?.status === "disponibile";
-            });
+            // Filtriamo direttamente l'array previewData tenendo solo quelli con status "disponibile"
+            // (Incluso quello forzato manualmente dal tasto "Accetta")
+            const validRecordsToImport = previewData.filter(row => row.status === "disponibile");
 
-            if (validJsonInputs.length === 0) {
+            if (validRecordsToImport.length === 0) {
                 setUiError("Nessun record contrassegnato come 'Importabile' da scrivere a DB.");
                 setLoading(false);
                 return;
             }
 
-            const res = await importEmailsFromJson(validJsonInputs);
-            
+            // Passiamo l'array di CheckedRecord invece del JSON originale filtrato
+            const res = await importEmailsFromJson(validRecordsToImport);
+
             if (!res.success) {
                 setUiError(res.error);
             } else {
@@ -157,7 +154,7 @@ export default function ImportEmailPage() {
             {/* BLOCCO ANTEPRIMA & TABELLA PARLANTE */}
             {previewData.length > 0 && (
                 <div className="space-y-5 pt-4 border-t border-dashed border-gray-300">
-                    
+
                     {/* Contatori macro */}
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
                         <div className="p-3 bg-gray-100 border rounded-lg"><span className="block text-xl font-bold text-gray-800">{previewData.length}</span><span className="text-xs text-gray-500 font-medium">Totali nel JSON</span></div>
@@ -180,14 +177,14 @@ export default function ImportEmailPage() {
                             <tbody>
                                 {previewData.map((row, idx) => (
                                     <tr key={idx} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors">
-                                        
+
                                         {/* COLONNA 1: DATI JSON */}
                                         <td className="p-3 space-y-0.5">
                                             <p className="font-semibold text-gray-900 dark:text-gray-100">{row.nome_json}</p>
                                             <p className="text-[11px] text-gray-500 italic">📍 {row.indirizzo_json || "Nessun indirizzo nel JSON"}</p>
                                             <p className="text-[9px] text-gray-400 font-mono">{row.google_maps_id}</p>
                                         </td>
-                                        
+
                                         {/* COLONNA 2: DATI DB CORRISPONDENTI */}
                                         <td className="p-3 space-y-0.5">
                                             {row.nome_db ? (
@@ -199,7 +196,7 @@ export default function ImportEmailPage() {
                                                 <span className="italic text-red-400">Nessun record confrontato</span>
                                             )}
                                         </td>
-                                        
+
                                         {/* COLONNA 3: BADGE SCORE */}
                                         <td className="p-3 whitespace-nowrap">
                                             {row.match_type === "id_link" && (
@@ -213,7 +210,7 @@ export default function ImportEmailPage() {
                                             )}
                                             {row.match_type === "nessuno" && <span className="text-gray-400 font-medium">—</span>}
                                         </td>
-                                        
+
                                         {/* COLONNA 4: STATO ED EVENTUALE BOTTONE ACCETTAZIONE */}
                                         <td className="p-3">
                                             <div className="flex items-center space-x-2">
