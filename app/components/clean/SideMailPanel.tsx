@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Copy, Check } from "lucide-react"; // Importate icone per la copia
 import { getLocalBenchmarks } from "../compare/actions";
 
 interface SideMailPanelProps {
@@ -30,6 +30,25 @@ export function SideMailPanel({
     
     const [rankInfo, setRankInfo] = useState<{ rank: number; total: number; score: number } | null>(null);
     const [isLoadingData, setIsLoadingData] = useState(false);
+
+    // Stati per gestire il feedback di copia di 3 secondi per ciascun campo
+    const [copiedField, setCopiedField] = useState<{ [key: string]: boolean }>({});
+
+    // Funzione helper per copiare negli appunti con feedback temporizzato
+    const handleCopy = async (text: string, fieldKey: string) => {
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedField((prev) => ({ ...prev, [fieldKey]: true }));
+            
+            // Rimuove il feedback dopo 3 secondi
+            setTimeout(() => {
+                setCopiedField((prev) => ({ ...prev, [fieldKey]: false }));
+            }, 3000);
+        } catch (err) {
+            console.error("Errore durante la copia negli appunti:", err);
+        }
+    };
 
     // Funzione stabile per generare i testi dei template
     const generateMailTexts = useCallback((template: string, data: any, info: { rank: number; total: number; score: number }) => {
@@ -91,6 +110,7 @@ Paolo`
             setBody("");
             setRankInfo(null);
             setIsLoadingData(false);
+            setCopiedField({}); // Resetta i feedback di copia alla chiusura
         }
     }, [isOpen]);
 
@@ -101,7 +121,6 @@ Paolo`
             
             setIsLoadingData(true);
             
-            // Fallback a 0 se la query principale non si tira dietro lat e lng
             const latitude = recordData.lat || 0;
             const longitude = recordData.lng || 0;
 
@@ -112,7 +131,6 @@ Paolo`
                     const list = response.data;
                     const totalCompetitors = list.length;
                     
-                    // Confronto robusto convertendo in stringa
                     const currentIndex = list.findIndex((item) => String(item.id) === String(recordData.id));
                     
                     const rank = currentIndex !== -1 ? currentIndex + 1 : totalCompetitors || 1;
@@ -123,7 +141,6 @@ Paolo`
 
                     generateMailTexts(selectedTemplate, recordData, info);
                 } else {
-                    // Fallback se la action risponde vuota o va in errore di rete
                     const fallbackInfo = { rank: 1, total: 1, score: 0 };
                     setRankInfo(fallbackInfo);
                     generateMailTexts(selectedTemplate, recordData, fallbackInfo);
@@ -197,18 +214,80 @@ Paolo`
                         </div>
                     )}
 
+                    {/* Destinatario */}
                     <div>
-                        <label className="text-xs font-semibold text-slate-600 mb-1 block">Destinatario</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-slate-600 block">Destinatario</label>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(recipientEmail, "recipient")}
+                                className="text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors"
+                            >
+                                {copiedField["recipient"] ? (
+                                    <>
+                                        <Check className="w-3 h-3 text-emerald-500" />
+                                        <span className="text-emerald-500 font-medium">Copiato!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copia rapida</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <Input value={recipientEmail} disabled className="bg-slate-50 text-slate-500 font-medium" />
                     </div>
 
+                    {/* Oggetto */}
                     <div>
-                        <label className="text-xs font-semibold text-slate-600 mb-1 block">Oggetto</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-slate-600 block">Oggetto</label>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(subject, "subject")}
+                                disabled={!subject}
+                                className="text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                            >
+                                {copiedField["subject"] ? (
+                                    <>
+                                        <Check className="w-3 h-3 text-emerald-500" />
+                                        <span className="text-emerald-500 font-medium">Copiato!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copia rapida</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="bg-white" placeholder="Generazione oggetto..." />
                     </div>
 
+                    {/* Corpo del Messaggio */}
                     <div>
-                        <label className="text-xs font-semibold text-slate-600 mb-1 block">Corpo del Messaggio</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-slate-600 block">Corpo del Messaggio</label>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(body, "body")}
+                                disabled={!body}
+                                className="text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                            >
+                                {copiedField["body"] ? (
+                                    <>
+                                        <Check className="w-3 h-3 text-emerald-500" />
+                                        <span className="text-emerald-500 font-medium">Copiato!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3 h-3" />
+                                        <span>Copia rapida</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <Textarea
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
