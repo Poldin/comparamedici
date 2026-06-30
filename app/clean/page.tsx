@@ -390,7 +390,6 @@ export default function CleanPage() {
                 recordData={mailTargetRecord}
                 onLogMailSent={async (recordId, templateType) => {
                     try {
-                        // Qui eseguiamo l'inserimento nella tabella public.comparator_email_sent tramite Supabase
                         const { supabase } = await import("@/app/lib/supabaseClient");
 
                         const { error } = await supabase
@@ -405,9 +404,22 @@ export default function CleanPage() {
 
                         if (error) throw error;
 
-                        // Ricarica i record locali per mostrare subito il badge blu "Inviata" aggiornato in tabella
-                        const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore);
-                        setRecords(response.data);
+                        // ✨ AGGIORNAMENTO LOCALE (Senza ricaricare la pagina o perdere lo scroll)
+                        setRecords((prevRecords) =>
+                            prevRecords.map((record) => {
+                                if (record.id === recordId) {
+                                    return {
+                                        ...record,
+                                        // Aggiorniamo l'array simulando la risposta del DB
+                                        comparator_email_sent: [
+                                            { email_sent_tmz: new Date().toISOString() },
+                                            ...(record.comparator_email_sent || [])
+                                        ]
+                                    };
+                                }
+                                return record;
+                            })
+                        );
 
                         return true;
                     } catch (err) {
