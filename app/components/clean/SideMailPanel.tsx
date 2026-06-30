@@ -38,19 +38,21 @@ export function SideMailPanel({
         const linkAnalisi = `${window.location.origin}/clinic/${data.id}`;
 
         if (template === "template_1") {
-            setSubject(`${nomeAttivita}: siete classificati #${info.rank} su ${info.total} in 15km dal vostro Centro`);
+            setSubject(`${nomeAttivita}: siete classificati 🥇${info.rank} su ${info.total} in 15km dal vostro centro`);
             setBody(
 `Gentilissimi,
-abbiamo analizzato la reputazione online di Studi e Cliniche dentistiche nel raggio di 15km dal vostro Centro.
+abbiamo analizzato la reputazione online di studi e cliniche dentistiche nel raggio di 15km dal vostro centro.
 
-Dai parametri online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} competitor totali rilevati nell'area.
+Dai dati online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} centri dentistici totali rilevati nell'area.
 
-Trovate l'analisi completa a questo link: 👉 ${linkAnalisi}
+Trovate l'analisi completa e verificabile a questo link: 
+👉 ${linkAnalisi}
 
 
 
-Per approfondire il dato potete prenotare con me una video al link in firma oppure chiamarmi.
-vi saluto cordialmente e vi auguro buon lavoro.
+
+Per approfondire il dato e migliorare in classifica (= migliorare l'attrattività verso nuovi pazienti) potete prenotare con me una video call al link in firma oppure chiamarmi.
+vi saluto e vi auguro buon lavoro
 Paolo`
             );
         } else {
