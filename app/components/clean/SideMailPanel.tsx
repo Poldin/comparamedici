@@ -27,7 +27,7 @@ export function SideMailPanel({
     const [selectedTemplate, setSelectedTemplate] = useState<string>("template_1");
     const [subject, setSubject] = useState("");
     const [body, setBody] = useState("");
-    
+
     const [rankInfo, setRankInfo] = useState<{ rank: number; total: number; score: number } | null>(null);
     const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -40,7 +40,7 @@ export function SideMailPanel({
         try {
             await navigator.clipboard.writeText(text);
             setCopiedField((prev) => ({ ...prev, [fieldKey]: true }));
-            
+
             // Rimuove il feedback dopo 3 secondi
             setTimeout(() => {
                 setCopiedField((prev) => ({ ...prev, [fieldKey]: false }));
@@ -59,7 +59,7 @@ export function SideMailPanel({
         if (template === "template_1") {
             setSubject(`${nomeAttivita}: siete classificati 🥇${info.rank} su ${info.total} studi dentistici attorno a voi`);
             setBody(
-`Gentilissimi,
+                `Gentilissimi,
 abbiamo analizzato la reputazione online di studi e cliniche dentistiche nel raggio di 15km dal vostro centro.
 Dai dati online (presenza sito web, recensioni Google e MioDottore, presenza di social, etc.) totalizzate 🔥${info.score} punti di reputazione che corrispondono alla posizione 🥇${info.rank} su ${info.total} centri dentistici totali rilevati nella vostra area.
 
@@ -78,7 +78,7 @@ Paolo`
         } else {
             setSubject(`Analisi Reputazione Digitale - ${nomeAttivita}`);
             setBody(
-`Buongiorno Team di ${nomeAttivita},
+                `Buongiorno Team di ${nomeAttivita},
 
 vi contatto per condividere un dato emerso dal nostro ultimo osservatorio locale: nella vostra area geografica (raggio 15km) sono stati mappati ben ${info.total} competitor diretti.
 
@@ -118,21 +118,21 @@ Paolo`
     useEffect(() => {
         async function calculateRankingAndGenerateMail() {
             if (!isOpen || !recordData?.id) return;
-            
+
             setIsLoadingData(true);
-            
+
             const latitude = recordData.lat || 0;
             const longitude = recordData.lng || 0;
 
             try {
                 const response = await getLocalBenchmarks(latitude, longitude, 15);
-                
+
                 if (response && response.data) {
                     const list = response.data;
                     const totalCompetitors = list.length;
-                    
+
                     const currentIndex = list.findIndex((item) => String(item.id) === String(recordData.id));
-                    
+
                     const rank = currentIndex !== -1 ? currentIndex + 1 : totalCompetitors || 1;
                     const currentScore = currentIndex !== -1 ? list[currentIndex].reputation_score : 0;
 
@@ -169,16 +169,12 @@ Paolo`
     const handleSendAndTrack = async () => {
         if (!recordData?.id) return;
 
-        const mailtoUrl = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        // 1. Rimosso il blocco che creava il link "mailto" ed eseguiva il .click()
 
-        const link = document.createElement("a");
-        link.href = mailtoUrl;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        // 2. Salva a DB richiamando la action passata come prop
         const success = await onLogMailSent(recordData.id, selectedTemplate);
+
+        // 3. Se il salvataggio va a buon fine, chiude lo Sheet laterale
         if (success) {
             onOpenChange(false);
         }
@@ -298,8 +294,8 @@ Paolo`
                     </div>
                 </div>
 
-                <Button 
-                    onClick={handleSendAndTrack} 
+                <Button
+                    onClick={handleSendAndTrack}
                     disabled={isLoadingData || !rankInfo}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-xs py-5 font-semibold disabled:bg-slate-300"
                 >
