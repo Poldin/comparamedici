@@ -38,15 +38,42 @@ export function SideMailPanel({
     const handleCopy = async (text: string, fieldKey: string) => {
         if (!text) return;
         try {
-            await navigator.clipboard.writeText(text);
+            // Se stiamo copiando il corpo del messaggio (che contiene HTML)
+            if (fieldKey === "body") {
+                // Sostituiamo i ritorni a capo standard con i <br /> per l'HTML
+                // in modo che mantenga la spaziatura corretta quando lo incolli
+                const htmlText = text.replace(/\n/g, "<br />");
+
+                const blobHtml = new Blob([htmlText], { type: "text/html" });
+                const blobText = new Blob([text], { type: "text/plain" });
+
+                // Scriviamo negli appunti sia la versione HTML formattata che quella testuale di fallback
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        "text/html": blobHtml,
+                        "text/plain": blobText,
+                    }),
+                ]);
+            } else {
+                // Per gli altri campi (es. oggetto o destinatario) basta il testo semplice
+                await navigator.clipboard.writeText(text);
+            }
+
             setCopiedField((prev) => ({ ...prev, [fieldKey]: true }));
 
-            // Rimuove il feedback dopo 3 secondi
             setTimeout(() => {
                 setCopiedField((prev) => ({ ...prev, [fieldKey]: false }));
             }, 3000);
         } catch (err) {
-            console.error("Errore durante la copia negli appunti:", err);
+            console.error("Errore durante la copia avanzata negli appunti:", err);
+            // Fallback d'emergenza se il browser non supporta ClipboardItem per l'HTML
+            try {
+                await navigator.clipboard.writeText(text);
+                setCopiedField((prev) => ({ ...prev, [fieldKey]: true }));
+                setTimeout(() => setCopiedField((prev) => ({ ...prev, [fieldKey]: false })), 3000);
+            } catch (e) {
+                console.error("Fallback fallito:", e);
+            }
         }
     };
 
