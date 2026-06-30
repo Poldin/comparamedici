@@ -84,7 +84,7 @@ export function SideMailPanel({
         const linkAnalisi = `${window.location.origin}/clinic/${data.id}`;
 
         if (template === "template_1") {
-            setSubject(`${nomeAttivita}: siete classificati 🥇${info.rank} su ${info.total} studi dentistici attorno a voi`);
+            setSubject(`Analisi della reputazione online per ${nomeAttivita}`);
             setBody(
                 `Gentilissimi,
 abbiamo analizzato la reputazione online di studi e cliniche dentistiche nel raggio di 15km dal vostro centro.
