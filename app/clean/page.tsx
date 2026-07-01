@@ -150,6 +150,12 @@ export default function CleanPage() {
         const emailSentList = record.comparator_email_sent || [];
         const isSent = emailSentList.length > 0;
 
+        // Ordiniamo l'array locale per sicurezza in base al timestamp più recente
+        const sortedEmails = [...emailSentList].sort(
+            (a, b) => new Date(b.email_sent_tmz).getTime() - new Date(a.email_sent_tmz).getTime()
+        );
+        const lastSent = sortedEmails[0];
+
         return (
             <div className="flex items-center justify-start gap-2 max-w-[240px] group/email">
                 <div className="flex flex-col items-start gap-1 truncate w-full">
@@ -163,13 +169,17 @@ export default function CleanPage() {
                         </Badge>
                     )}
 
-                    {/* Il badge dello stato dell'invio ora è indipendente dalla presenza del testo email */}
                     {isSent ? (
-                        <Badge className="bg-blue-600 text-white font-medium text-[10px] h-5 w-auto">
-                            ✓ Inviata il {new Date(emailSentList[0].email_sent_tmz).toLocaleDateString()}
+                        <Badge
+                            className="bg-blue-600 text-white font-medium text-[10px] h-auto py-0.5 px-2 w-auto flex flex-col items-start leading-tight"
+                            title={`Totale invii: ${emailSentList.length}`}
+                        >
+                            <span>✓ Ultimo invio:</span>
+                            <span className="opacity-90">
+                                {new Date(lastSent.email_sent_tmz).toLocaleDateString()} alle {new Date(lastSent.email_sent_tmz).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                         </Badge>
                     ) : (
-                        // Mostra "Da Inviare" solo se c'è almeno un'email inserita a DB
                         record.email && (
                             <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5">
                                 Da Inviare

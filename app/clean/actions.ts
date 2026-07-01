@@ -124,9 +124,11 @@ export async function getGoogleRecords(
 
         // 2. Filtro Intelligente Stato Invio Mail (Tutti / Già Inviate / Da Inviare)
         if (emailSentStatus === "sent") {
+            // Mostra solo i record che hanno ALMENO un invio registrato
             query = query.not("comparator_email_sent", "is", null);
         } else if (emailSentStatus === "not_sent") {
-            query = query.filter("comparator_email_sent", "is", null);
+            // Mostra solo i record che NON hanno alcun invio registrato
+            query = query.is("comparator_email_sent", null);
         }
 
         const { data, error, count } = await query.range(from, to);
