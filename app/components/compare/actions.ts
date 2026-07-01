@@ -57,7 +57,7 @@ export async function getLocalBenchmarks(
     radiusKm: number
 ): Promise<{ data: BenchmarkRecord[]; error: string | null }> {
 
-    // Approssimazione: 1 grado di latitudine/longitudine è circa 111 km
+    // Approssimazione per il box iniziale di ricerca sul DB
     const degreeOffset = radiusKm / 111;
 
     try {
@@ -96,7 +96,6 @@ export async function getLocalBenchmarks(
         const rawData = data || [];
 
         // 1. TROVIAMO I MASSIMI REALI NEL MERCATO LOCALE SELEZIONATO
-        // Questo fa sì che il punteggio sia relativo a chi fa meglio in quella specifica zona!
         const maxGoogleReviewsInArea = Math.max(...rawData.map((item: any) => item.total_reviews || 0), 100);
 
         const maxMdReviewsInArea = Math.max(...rawData.map((item: any) => {
@@ -107,114 +106,101 @@ export async function getLocalBenchmarks(
             return 0;
         }), 50);
 
-        const processedData: BenchmarkRecord[] = rawData.map((item: any) => {
-            const avgReview = item.avg_review || 0;
-            const googleReviews = item.total_reviews || 0;
+        // 2. FILTRIAMO E COSTRUIAMO I RECORD INTERNI AL CERCHIO PERFETTO
+        const processedData: BenchmarkRecord[] = rawData
+            .map((item: any) => {
+                // Distanza pitagorica approssimativa
+                const distance = Math.sqrt(
+                    Math.pow((item.lat! - lat) * 111, 2) +
+                    Math.pow((item.lng! - lng) * 111, 2)
+                );
 
-            // --- GESTIONE DATI MIODOTTORE ---
-            let miodottoreReviews: number | null = null;
-            let miodottoreAvg: number | null = null;
-            let dpLinkUrl: string | null = null;
+                // Passiamo la distanza avanti per poterla usare o filtrare dopo
+                return { item, distance };
+            })
+            // 👇 IL TAGLIO CIRCOLARE: Esclude i record fuori raggio posizionati negli angoli del quadrato
+            .filter((container) => container.distance <= radiusKm)
+            .map((container) => {
+                const { item, distance } = container;
+                const avgReview = item.avg_review || 0;
+                const googleReviews = item.total_reviews || 0;
 
-            if (item.comparator_link_g_dp && item.comparator_link_g_dp.length > 0) {
-                const dpRecords = item.comparator_link_g_dp
-                    .map((link: any) => link.comparator_out_dp)
-                    .filter(Boolean);
+                // --- GESTIONE DATI MIODOTTORE ---
+                let miodottoreReviews: number | null = null;
+                let miodottoreAvg: number | null = null;
+                let dpLinkUrl: string | null = null;
 
-                if (dpRecords.length > 0) {
-                    dpRecords.sort((a: any, b: any) =>
-                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                    );
+                if (item.comparator_link_g_dp && item.comparator_link_g_dp.length > 0) {
+                    const dpRecords = item.comparator_link_g_dp
+                        .map((link: any) => link.comparator_out_dp)
+                        .filter(Boolean);
 
-                    miodottoreReviews = dpRecords[0].tot_dc_reviews;
-                    miodottoreAvg = dpRecords[0].avg_grade;
-                    dpLinkUrl = dpRecords[0].dp_link_url;
+                    if (dpRecords.length > 0) {
+                        dpRecords.sort((a: any, b: any) =>
+                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                        );
+
+                        miodottoreReviews = dpRecords[0].tot_dc_reviews;
+                        miodottoreAvg = dpRecords[0].avg_grade;
+                        dpLinkUrl = dpRecords[0].dp_link_url;
+                    }
                 }
-            }
-            // ---------------------------------
 
-            // --- CALCOLO DEL REPUTATION SCORE DINAMICO ---
-            // --- NUOVA LOGICA AVANZATA A 7 SCAGLIONI ---
-            const gReviews = item.total_reviews || 0;
-            const gAvg = item.avg_review || 0;
-            const mdReviews = miodottoreReviews || 0;
+                // --- CALCOLO DEL REPUTATION SCORE DINAMICO ---
+                const gReviews = item.total_reviews || 0;
+                const gAvg = item.avg_review || 0;
+                const mdReviews = miodottoreReviews || 0;
+                const totalReviewsCount = gReviews + mdReviews;
 
-            // Cumulato pesato tra Google e MioDottore
-            const totalReviewsCount = gReviews + mdReviews;
+                let trustFactor = 0.3;
+                let volumePoints = 0;
 
-            let trustFactor = 0.3;
-            let volumePoints = 0;
+                if (totalReviewsCount <= 15) {
+                    trustFactor = 0.3;
+                    volumePoints = (totalReviewsCount / 15) * 5;
+                } else if (totalReviewsCount > 15 && totalReviewsCount <= 40) {
+                    trustFactor = 0.5;
+                    volumePoints = 5 + ((totalReviewsCount - 15) / 25) * 5;
+                } else if (totalReviewsCount > 40 && totalReviewsCount <= 100) {
+                    trustFactor = 0.7;
+                    volumePoints = 10 + ((totalReviewsCount - 40) / 60) * 10;
+                } else if (totalReviewsCount > 100 && totalReviewsCount <= 250) {
+                    trustFactor = 0.85;
+                    volumePoints = 20 + ((totalReviewsCount - 100) / 150) * 5;
+                } else if (totalReviewsCount > 250 && totalReviewsCount <= 500) {
+                    trustFactor = 0.95;
+                    volumePoints = 25 + ((totalReviewsCount - 250) / 250) * 5;
+                } else if (totalReviewsCount > 500 && totalReviewsCount <= 1000) {
+                    trustFactor = 1.0;
+                    volumePoints = 30 + ((totalReviewsCount - 500) / 500) * 10;
+                } else {
+                    trustFactor = 1.0;
+                    volumePoints = 40;
+                }
 
-            if (totalReviewsCount <= 15) {
-                // Scaglione 1: 0 - 15 (Basso basso)
-                trustFactor = 0.3;
-                volumePoints = (totalReviewsCount / 15) * 5; // max 5 punti
-            }
-            else if (totalReviewsCount > 15 && totalReviewsCount <= 40) {
-                // Scaglione 2: 16 - 40 (Interessante)
-                trustFactor = 0.5;
-                volumePoints = 5 + ((totalReviewsCount - 15) / 25) * 5; // max 10 punti
-            }
-            else if (totalReviewsCount > 40 && totalReviewsCount <= 100) {
-                // Scaglione 3: 41 - 100 (Molto interessante)
-                trustFactor = 0.7;
-                volumePoints = 10 + ((totalReviewsCount - 40) / 60) * 10; // max 20 punti
-            }
-            else if (totalReviewsCount > 100 && totalReviewsCount <= 250) {
-                // Scaglione 4: 101 - 250 (Consolidato)
-                trustFactor = 0.85;
-                volumePoints = 20 + ((totalReviewsCount - 100) / 150) * 5; // max 25 punti
-            }
-            else if (totalReviewsCount > 250 && totalReviewsCount <= 500) {
-                // Scaglione 5: 251 - 500 (Leader Locale)
-                trustFactor = 0.95;
-                volumePoints = 25 + ((totalReviewsCount - 250) / 250) * 5; // max 30 punti
-            }
-            else if (totalReviewsCount > 500 && totalReviewsCount <= 1000) {
-                // Scaglione 6: 501 - 1000 (Gigante del mercato)
-                trustFactor = 1.0;
-                volumePoints = 30 + ((totalReviewsCount - 500) / 500) * 10; // max 40 punti
-            }
-            else {
-                // Scaglione 7: Oltre 1000 (Dominio assoluto)
-                trustFactor = 1.0;
-                volumePoints = 40; // Raggiunto il cap massimo di volume
-            }
+                const qualityPoints = gAvg * 12;
+                const calculatedScore = Math.floor((qualityPoints * trustFactor) + volumePoints);
+                const finalScore = Math.max(0, Math.min(calculatedScore, 100));
 
-            // Calcolo dei punti qualità (voto Google su base 60)
-            const qualityPoints = gAvg * 12; // Se ha 5.0 -> 60 punti. Se ha 4.5 -> 54 punti.
-
-            // Calcolo finale combinato
-            const calculatedScore = Math.floor((qualityPoints * trustFactor) + volumePoints);
-            const finalScore = Math.max(0, Math.min(calculatedScore, 100));
-
-
-            //--------------------------------------------
-
-            // Distanza pitagorica approssimativa
-            const distance = Math.sqrt(
-                Math.pow((item.lat! - lat) * 111, 2) +
-                Math.pow((item.lng! - lng) * 111, 2)
-            );
-
-            return {
-                id: item.id,
-                name: item.name,
-                google_category: item.google_category,
-                avg_review: avgReview,
-                total_reviews: googleReviews,
-                miodottore_reviews: miodottoreReviews,
-                miodottore_avg: miodottoreAvg,
-                website_url: item.website_url || null,
-                online_booking_url: item.online_booking_url || null,
-                g_maps_link: item.g_maps_link,
-                dp_link_url: dpLinkUrl,
-                address: item.address,
-                phone: item.phone,
-                distance_km: distance,
-                reputation_score: finalScore
-            };
-        }).sort((a, b) => b.reputation_score - a.reputation_score);
+                return {
+                    id: item.id,
+                    name: item.name,
+                    google_category: item.google_category,
+                    avg_review: avgReview,
+                    total_reviews: googleReviews,
+                    miodottore_reviews: miodottoreReviews,
+                    miodottore_avg: miodottoreAvg,
+                    website_url: item.website_url || null,
+                    online_booking_url: item.online_booking_url || null,
+                    g_maps_link: item.g_maps_link,
+                    dp_link_url: dpLinkUrl,
+                    address: item.address,
+                    phone: item.phone,
+                    distance_km: distance,
+                    reputation_score: finalScore
+                };
+            })
+            .sort((a, b) => b.reputation_score - a.reputation_score);
 
         return { data: processedData, error: null };
     } catch (error: any) {
