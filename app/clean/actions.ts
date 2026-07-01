@@ -50,15 +50,16 @@ async function getSingleGoogleRecord(id: string) {
 }
 
 /**
-* Recupera i record di Google filtrati per ricerca testuale, categoria ed email con Paginazione Server-Side
-*/
+ * Recupera i record di Google filtrati per ricerca testuale, categoria, presenza email e stato di invio con Paginazione Server-Side
+ */
 export async function getGoogleRecords(
     search?: string,
     categories?: string[],
     page: number = 1,
     pageSize: number = 100,
     onlyMioDottore: boolean = false,
-    onlyWithEmail: boolean = false // <--- MODIFICA QUI: Aggiunto nuovo parametro
+    emailPresenceStatus: "all" | "with_email" | "without_email" = "all", // 👈 Aggiornato a 3 stati
+    emailSentStatus: "all" | "sent" | "not_sent" = "all"                 // 👈 Aggiornato a 3 stati
 ) {
     try {
         const from = (page - 1) * pageSize;
@@ -99,21 +100,33 @@ export async function getGoogleRecords(
           `, { count: 'exact' })
             .order("created_at", { ascending: false });
 
+        // Filtro di ricerca testuale
         if (search && search.trim() !== "") {
             query = query.ilike("name", `%${search.trim()}%`);
         }
 
+        // Filtro categorie
         if (categories && categories.length > 0) {
             query = query.in("google_category", categories);
         }
 
+        // Filtro piattaforma MioDottore / DocPlanner
         if (onlyMioDottore) {
             query = query.or("online_booking_url.ilike.%miodottore%,online_booking_url.ilike.%docplanner%");
         }
 
-        // <--- MODIFICA QUI: Applica il filtro se onlyWithEmail è true
-        if (onlyWithEmail) {
+        // 1. Filtro Intelligente Presenza Email (Tutti / Con Email / Senza Email)
+        if (emailPresenceStatus === "with_email") {
             query = query.not("email", "is", null).neq("email", "");
+        } else if (emailPresenceStatus === "without_email") {
+            query = query.or("email.is.null,email.eq.");
+        }
+
+        // 2. Filtro Intelligente Stato Invio Mail (Tutti / Già Inviate / Da Inviare)
+        if (emailSentStatus === "sent") {
+            query = query.not("comparator_email_sent", "is", null);
+        } else if (emailSentStatus === "not_sent") {
+            query = query.filter("comparator_email_sent", "is", null);
         }
 
         const { data, error, count } = await query.range(from, to);

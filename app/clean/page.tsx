@@ -38,7 +38,7 @@ export default function CleanPage() {
     const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
-    const [onlyWithEmail, setOnlyWithEmail] = useState(false);
+    const [emailPresenceStatus, setEmailPresenceStatus] = useState<"all" | "with_email" | "without_email">("all");
 
     const [googleName, setGoogleName] = useState("");
     const [googlePhone, setGooglePhone] = useState("");
@@ -49,6 +49,7 @@ export default function CleanPage() {
     const [isMailOpen, setIsMailOpen] = useState(false);
     const [mailTargetEmail, setMailTargetEmail] = useState("");
     const [mailTargetRecord, setMailTargetRecord] = useState<any | null>(null);
+    const [emailSentStatus, setEmailSentStatus] = useState<"all" | "sent" | "not_sent">("all"); // 2. Filtro stato invio (Tutti/Inviati/Da inviare)
 
     useEffect(() => {
         getUniqueGoogleCategories().then(setCategories);
@@ -59,12 +60,12 @@ export default function CleanPage() {
     // Se l'utente digita una ricerca o cambia categoria, lo resettiamo a pagina 1
     useEffect(() => {
         setPage(1);
-    }, [search, selectedCategories, onlyMioDottore, onlyWithEmail]);
+    }, [search, selectedCategories, onlyMioDottore, emailPresenceStatus, emailSentStatus]);
 
     // Caricamento dati reattivo a filtri E pagina corrente
     useEffect(() => {
         startTransition(async () => {
-            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore, onlyWithEmail);
+            const response = await getGoogleRecords(search, selectedCategories, page, PAGE_SIZE, onlyMioDottore, emailPresenceStatus, emailSentStatus);
             setRecords(response.data);
             setTotalCount(response.count);
 
@@ -73,7 +74,7 @@ export default function CleanPage() {
                 if (updated) setSelectedRecord(updated);
             }
         });
-    }, [search, selectedCategories, page, onlyMioDottore, onlyWithEmail]);
+    }, [search, selectedCategories, page, onlyMioDottore, emailPresenceStatus, emailSentStatus]);
 
     useEffect(() => {
         if (selectedRecord) {
@@ -84,6 +85,49 @@ export default function CleanPage() {
             setNewDpCategory("");
         }
     }, [selectedRecord]);
+
+
+    const handleCycleEmailSentFilter = () => {
+        setEmailSentStatus((current) => {
+            if (current === "all") return "sent";
+            if (current === "sent") return "not_sent";
+            return "all";
+        });
+    };
+
+    const getEmailSentBtnConfig = () => {
+        switch (emailSentStatus) {
+            case "sent":
+                return { text: "✓ Solo Email Inviate", variant: "default" as const, className: "bg-blue-600 hover:bg-blue-700 text-white" };
+            case "not_sent":
+                return { text: "✗ Solo Da Inviare", variant: "default" as const, className: "bg-amber-600 hover:bg-amber-700 text-white" };
+            default:
+                return { text: "Filtra per Stato Invio", variant: "outline" as const, className: "bg-white" };
+        }
+    };
+
+    const emailSentBtnConfig = getEmailSentBtnConfig();
+
+    const handleCycleEmailPresence = () => {
+        setEmailPresenceStatus((current) => {
+            if (current === "all") return "with_email";
+            if (current === "with_email") return "without_email";
+            return "all";
+        });
+    };
+
+    const getEmailPresenceBtnConfig = () => {
+        switch (emailPresenceStatus) {
+            case "with_email":
+                return { text: "✓ Solo Con Email", variant: "default" as const, className: "bg-blue-600 hover:bg-blue-700 text-white" };
+            case "without_email":
+                return { text: "✗ Solo Senza Email", variant: "default" as const, className: "bg-slate-600 hover:bg-slate-700 text-white" };
+            default:
+                return { text: "Filtra per Presenza Email", variant: "outline" as const, className: "bg-white" };
+        }
+    };
+
+    const emailPresenceBtnConfig = getEmailPresenceBtnConfig();
 
     const handleSelectRow = (id: string, checked: boolean) => {
         if (checked) {
@@ -103,39 +147,46 @@ export default function CleanPage() {
     };
 
     const renderEmailStatus = (record: any) => {
-        if (!record.email) {
-            return <Badge variant="secondary" className="text-slate-400 bg-slate-100">Nessuna Email</Badge>;
-        }
-
         const emailSentList = record.comparator_email_sent || [];
         const isSent = emailSentList.length > 0;
 
         return (
-            <div className="flex items-center justify-between gap-2 max-w-[240px] group/email">
+            <div className="flex items-center justify-start gap-2 max-w-[240px] group/email">
                 <div className="flex flex-col items-start gap-1 truncate w-full">
-                    <span className="text-sm font-medium text-slate-700 truncate w-full" title={record.email}>
-                        {record.email}
-                    </span>
+                    {record.email ? (
+                        <span className="text-sm font-medium text-slate-700 truncate w-full" title={record.email}>
+                            {record.email}
+                        </span>
+                    ) : (
+                        <Badge variant="secondary" className="text-slate-400 bg-slate-100 text-[10px] h-5">
+                            Nessuna Email a DB
+                        </Badge>
+                    )}
+
+                    {/* Il badge dello stato dell'invio ora è indipendente dalla presenza del testo email */}
                     {isSent ? (
-                        <Badge className="bg-blue-600 text-white font-medium text-[10px] h-5">
+                        <Badge className="bg-blue-600 text-white font-medium text-[10px] h-5 w-auto">
                             ✓ Inviata il {new Date(emailSentList[0].email_sent_tmz).toLocaleDateString()}
                         </Badge>
                     ) : (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5">
-                            Da Inviare
-                        </Badge>
+                        // Mostra "Da Inviare" solo se c'è almeno un'email inserita a DB
+                        record.email && (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5">
+                                Da Inviare
+                            </Badge>
+                        )
                     )}
                 </div>
 
-                {/* CTA di invio mail: ora visibile sempre se il campo email esiste */}
+                {/* CTA di invio mail */}
                 <Button
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 shrink-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 opacity-80 group-hover/email:opacity-100 transition-all"
                     title="Apri pannello invio mail"
                     onClick={(e) => {
-                        e.stopPropagation(); // Evita di aprire la ReconciliationSheet della riga
-                        setMailTargetEmail(record.email);
+                        e.stopPropagation();
+                        setMailTargetEmail(record.email || "");
                         setMailTargetRecord(record);
                         setIsMailOpen(true);
                     }}
@@ -279,11 +330,19 @@ export default function CleanPage() {
                 </Button>
 
                 <Button
-                    variant={onlyWithEmail ? "default" : "outline"}
-                    className={onlyWithEmail ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white"}
-                    onClick={() => setOnlyWithEmail((prev) => !prev)}
+                    variant={emailPresenceBtnConfig.variant}
+                    className={emailPresenceBtnConfig.className}
+                    onClick={handleCycleEmailPresence}
                 >
-                    {onlyWithEmail ? "✓ Solo con Email" : "Filtra per Email"}
+                    {emailPresenceBtnConfig.text}
+                </Button>
+
+                <Button
+                    variant={emailSentBtnConfig.variant}
+                    className={emailSentBtnConfig.className}
+                    onClick={handleCycleEmailSentFilter}
+                >
+                    {emailSentBtnConfig.text}
                 </Button>
 
                 {isPending && <span className="text-xs text-slate-400 self-center animate-pulse">Aggiornamento dati...</span>}
@@ -314,6 +373,7 @@ export default function CleanPage() {
                             <TableHead>Prenotazione Online</TableHead>
                             <TableHead>Contatto & Email</TableHead>
                             <TableHead>Collegamenti MioDottore</TableHead>
+                            <TableHead className="w-[80px]">Azioni</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -356,6 +416,18 @@ export default function CleanPage() {
                                         ) : (
                                             <Badge variant="secondary" className="bg-amber-100 text-amber-800">Scollegato</Badge>
                                         )}
+                                    </TableCell>
+                                    <TableCell onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                            onClick={() => {
+                                                window.open(`/clinic/${record.id}`, "_blank", "noopener,noreferrer");
+                                            }}
+                                        >
+                                            Apri Clinica
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             );
