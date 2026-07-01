@@ -407,7 +407,14 @@ export default function CleanPage() {
                                         />
                                     </TableCell>
 
-                                    <TableCell className="font-semibold text-slate-900">{record.name}</TableCell>
+                                    <TableCell className="py-3">
+                                        <div className="font-semibold text-slate-900">{record.name}</div>
+                                        {record.address && (
+                                            <div className="text-xs text-slate-500 font-normal mt-0.5 max-w-[300px] truncate" title={record.address}>
+                                                {record.address}
+                                            </div>
+                                        )}
+                                    </TableCell>
                                     <TableCell><Badge variant="outline">{record.google_category || "N/A"}</Badge></TableCell>
                                     <TableCell className="text-sm text-slate-600">{record.phone || "-"}</TableCell>
                                     <TableCell>{renderBookingBadge(record.online_booking_url)}</TableCell>
@@ -437,6 +444,20 @@ export default function CleanPage() {
                                             }}
                                         >
                                             Apri Clinica
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={!record.g_maps_link} 
+                                            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 whitespace-nowrap gap-1"
+                                            onClick={() => {
+                                                if (record.g_maps_link) {
+                                                    window.open(record.g_maps_link, "_blank", "noopener,noreferrer");
+                                                }
+                                            }}
+                                            title={record.g_maps_link ? "Apri su Google Maps" : "Link Google Maps non disponibile"}
+                                        >
+                                            Apri Maps
                                         </Button>
                                     </TableCell>
                                 </TableRow>

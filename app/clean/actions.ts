@@ -79,6 +79,7 @@ export async function getGoogleRecords(
             total_reviews,
             lat,
             lng,
+            g_maps_link,
             email,
             comparator_email_sent (
               id,
